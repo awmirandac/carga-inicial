@@ -230,5 +230,5 @@ for index, row in merged_df_plan.iterrows():
 
 # Crear el árbol XML y escribirlo en un archivo
 tree = ET.ElementTree(root)
-tree.write('today-dev-catalog-sales.xml', encoding='utf-8', xml_declaration=True)
+tree.write('sales.xml', encoding='utf-8', xml_declaration=True)
 

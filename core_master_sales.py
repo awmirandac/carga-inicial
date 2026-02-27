@@ -60,6 +60,22 @@ def create_variation_attribute(attributes, attr_id, display_name, values):
     if len(values) == 0:
         return
 
+    # Ordenar valores si es cen_modality: Prepago primero, luego Postpago
+    if attr_id == 'cen_modality':
+        values_list = list(values)
+        sorted_values = []
+        # Agregar PREPAGO primero si existe
+        if 'PREPAGO' in values_list:
+            sorted_values.append('PREPAGO')
+        # Agregar POSPAGO después si existe
+        if 'POSPAGO' in values_list:
+            sorted_values.append('POSPAGO')
+        # Agregar cualquier otro valor que no sea PREPAGO ni POSPAGO
+        for v in values_list:
+            if v not in ['PREPAGO', 'POSPAGO']:
+                sorted_values.append(v)
+        values = sorted_values
+
     variation_attr = ET.SubElement(attributes, 'variation-attribute', {
         'attribute-id': attr_id,
         'variation-attribute-id': attr_id
@@ -79,7 +95,7 @@ def create_variation_attribute(attributes, attr_id, display_name, values):
         variation_value = ET.SubElement(variation_values, 'variation-attribute-value', {'value': formatted_value})
         ET.SubElement(variation_value, 'display-value', {'xml:lang': 'x-default'}).text = formatted_value
 
-def convert_values_custom_attribute(custom_attrs, attr_value):
+def convert_values_custom_attribute(custom_attrs, attr_value, _attr_id):
     """Formatea y crea custom-attribute para cen_otherBenDataExtended con múltiples valores
 
     Transforma valores separados por saltos de línea o viñetas en elementos <value> individuales
@@ -91,7 +107,7 @@ def convert_values_custom_attribute(custom_attrs, attr_value):
                   ...
                 </custom-attribute>
     """
-    custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_otherBenDataExtended'})
+    custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': _attr_id})
 
     # Dividir por saltos de línea o guiones que indican nuevos beneficios
     values = [v.strip() for v in attr_value.replace('- ', '\n').split('\n') if v.strip()]
@@ -102,6 +118,9 @@ def convert_values_custom_attribute(custom_attrs, attr_value):
 
 def add_product_variations(product, df_prod_attr):
     """Añade variaciones (color, almacenamiento, modalidad) a un producto padre"""
+    # Filtrar productos PLAN - no se ligan como variaciones al padre
+    df_prod_attr = df_prod_attr[df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] != 'PLAN']
+    
     if df_prod_attr.empty or len(df_prod_attr['ITEM_CODE'].unique()) < 1:
         return
 
@@ -224,6 +243,28 @@ def add_custom_attributes(product, row, df_columns):
                         attr_value = 'Prepago'
                     elif attr_value == 'POSPAGO':
                         attr_value = 'Postpago'
+                if attr_id == 'attr_conf_modalidad':
+                    if attr_value == 'Prepago':
+                        attr_value = 'PREPAGO'
+                    elif attr_value == 'Postpago':
+                        attr_value = 'POSTPAGO'
+                    elif attr_value == 'Prepago y Postpago':
+                        attr_value = 'PREPAGOPOSTPAGO'
+                    elif attr_value == 'Planes postpago con equipo':
+                        attr_value = 'PLANCONEQUIPO'
+                    elif attr_value == 'Planes postpago sin equipo':
+                        attr_value = 'PLANSINEQUIPO'
+                    elif attr_value == 'Plan con y sin equipo':
+                        attr_value = 'PLANCONEQUIPOPLANSINEQUIPO'
+                    elif attr_value == 'Avanzado':
+                        attr_value = 'AVANZADO' 
+                    elif attr_value == 'Avanzado HD':
+                        attr_value = 'AVANZADOHD'
+                    elif attr_value == 'Avanzado HD Plus':
+                        attr_value = 'AVANZADOHDPLUS'
+                if attr_id == 'attr_conf_tipoproducto':
+                    if attr_value == 'OTRO':
+                        attr_value = 'ACCESORIOS'
                 ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
 
     for prefix in CEN_PREFFIXES:
@@ -235,9 +276,9 @@ def add_custom_attributes(product, row, df_columns):
                 # Formatear campos cen, excepto color, almacenamiento y modalidad
                 if attr_id not in ['cen_color', 'cen_storage', 'cen_modality']:
                     if attr_id == 'cen_otherBenDataExtended':
-                        convert_values_custom_attribute(custom_attrs, attr_value)
+                        convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
                     elif attr_id == 'cen_outstanding_features':
-                        convert_values_custom_attribute(custom_attrs, attr_value)
+                        convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
                     elif attr_id == 'cen_snsData':
                         convert_sns_data(custom_attrs, attr_value)
                     elif attr_id == 'cen_sim_analogic_support':
@@ -279,7 +320,7 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
         option_value = ET.SubElement(option_values, 'option-value', {'value-id': plan_code, 'default': is_default})
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = plan_name
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = offer_price
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = offer_price
 
 def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
     """Crea opciones de teléfonos para un plan CON EQUIPO"""
@@ -295,8 +336,12 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
 
     # Eliminar duplicados por ITEM_CODE
     unique_phones = related_phones.drop_duplicates(subset=['ITEM_CODE'], keep='first')
+    
+    # Recolectar solo los códigos padres sin duplicados
+    added_codes = set()
+    idx_for_default = 0
 
-    # Iterar sobre teléfonos relacionados
+    # Agregar solo los teléfonos padres
     for idx_phone, phone_row in unique_phones.iterrows():
         phone_code = str(phone_row['ITEM_CODE'])
 
@@ -304,14 +349,28 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
         if phone_code not in df_phones['ITEM_CODE'].values:
             continue
 
-        # Determinar si es default
-        is_default = 'true' if idx_phone == unique_phones.index[0] else 'false'
+        # Buscar el padre
+        parent_rows = df_phones[df_phones['ITEM_CODE'] == phone_code]
+        if parent_rows.empty:
+            continue
+            
+        parent_code = str(parent_rows.iloc[0].get('PRODUCT_CODE_TELV2', ''))
+        if not parent_code:
+            continue
+            
+        # Evitar duplicados
+        if parent_code in added_codes:
+            continue
+            
+        added_codes.add(parent_code)
+        is_default = 'true' if idx_for_default == 0 else 'false'
+        idx_for_default += 1
 
-        option_value = ET.SubElement(option_values, 'option-value', {'value-id': phone_code, 'default': is_default})
-        ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = phone_code
-        ET.SubElement(option_value, 'product-id-modifier').text = phone_code
+        option_value = ET.SubElement(option_values, 'option-value', {'value-id': parent_code, 'default': is_default})
+        ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = parent_code
+        ET.SubElement(option_value, 'product-id-modifier').text = parent_code
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = '0.00'
 
 def add_product_options(product, row, df_relations, df_plans, df_phones):
     """Añade opciones de producto según tipo (POSPAGO, PREPAGO, PLAN)"""
@@ -351,7 +410,7 @@ def create_product_options(parent, df_options, name):
         option = ET.SubElement(option_values, 'option-value', {'value-id': str(option_row['OPTION_CODE']), 'default': is_default})
         ET.SubElement(option, 'display-value', {'xml:lang': 'x-default'}).text = str(option_row['OPTION_NAME'])
         option_prices = ET.SubElement(option, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = str(option_row['OPTION_PRICE'])
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = str(option_row['OPTION_PRICE'])
 
 ########## CONSTRUCCIÓN DEL CATÁLOGO ##########
 
@@ -391,7 +450,6 @@ def create_parent_product(root, row, df, df_children):
 
     ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
 
-    # Añadir variaciones
     add_product_variations(product, df_children)
     add_store_attributes(product)
 
@@ -423,7 +481,9 @@ def create_child_product(root, row, df_columns):
     ET.SubElement(product, 'long-description', {'xml:lang': 'x-default'}).text = str(long_desc)
 
     add_product_flags(product)
-    # No agregar imagenes a variantes; solo a productos master
+    # Agregar imágenes si es PLAN, si no es variante no agrega imágenes
+    if row['ATTR_CONF_TIPOPRODUCTO'] == 'PLAN':
+        add_product_images(product, row['ITEM_CODE'])
 
     ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
 
@@ -450,27 +510,27 @@ shared_options = {
     'prepagoOptions': {
         'OPTION_CODE': ['PRLN'],
         'OPTION_NAME': ['Línea Nueva'],
-        'OPTION_PRICE': [0]
+        'OPTION_PRICE': [10.00]
     },
     'postpagoOptions': {
         'OPTION_CODE': ['PPLN', 'PPR'],
         'OPTION_NAME': ['Línea Nueva', 'Renueva tu equipo'],
-        'OPTION_PRICE': [0, 0]
+        'OPTION_PRICE': [0.00, 0.00]
     },
     'mesesContratoOptions': {
         'OPTION_CODE': ['12', '18', '24'],
         'OPTION_NAME': ['12 meses', '18 meses', '24 meses'],
-        'OPTION_PRICE': [0, 0, 0]
+        'OPTION_PRICE': [0.00, 0.00, 0.00]
     },
     'planConEquipoOptions': {
         'OPTION_CODE': ['PCELN', 'PCERP'],
         'OPTION_NAME': ['Línea nueva', 'Renueva tu plan'],
-        'OPTION_PRICE': [0, 0]
+        'OPTION_PRICE': [0.00, 0.00]
     },
     'planSinEquipoOptions': {
         'OPTION_CODE': ['PSELN', 'PSER'],
         'OPTION_NAME': ['Línea nueva', 'Renovación'],
-        'OPTION_PRICE': [0, 0]
+        'OPTION_PRICE': [0.00, 0.00]
     }
 }
 
@@ -480,5 +540,5 @@ for option_name, option_data in shared_options.items():
 
 ########## EXPORTAR XML ##########
 tree = ET.ElementTree(root)
-tree.write('today-5-catalog-master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)
