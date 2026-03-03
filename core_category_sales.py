@@ -47,9 +47,80 @@ categories = [
             {
                 "type": "attribute",
                 "bucket-type": "none",
+                "attribute-id": "attr_tipo_tecnologia",
+                "system": "false"
+            },
+            {
+                "type": "attribute",
+                "bucket-type": "none",
+                "attribute-id": "attr_conf_modalidad",
+                "system": "false"
+            },
+            {
+                "type": "attribute",
+                "bucket-type": "none",
+                "attribute-id": "attr_chars_titulo_internet",
+                "system": "false"
+            },
+            {
+                "type": "attribute",
+                "bucket-type": "none",
                 "attribute-id": "brand",
                 "system": "true",
-                "display-name": "Por Marca",
+                "display-name": "Marca",
+                "value-set": "search-result",
+                "sort-mode": "value-name",
+                "sort-direction": "ascending",
+                "cutoff-threshold": "5"
+            },
+            {
+                "type": "attribute",
+                "bucket-type": "none",
+                "attribute-id": "cenPromotions",
+                "system": "false",
+                "display-name": "Promociones",
+                "value-set": "search-result",
+                "sort-mode": "value-name",
+                "sort-direction": "ascending",
+                "cutoff-threshold": "5"
+            },
+            {
+                "type": "promotion",
+                "bucket-type": "none",
+                "display-name": "Promociones",
+                "sort-mode": "value-count",
+                "sort-direction": "ascending",
+                "cutoff-threshold": "5"
+            },
+            {
+                "type": "attribute",
+                "bucket-type": "values",
+                "attribute-id": "cen_storage",
+                "system": "false",
+                "display-name": "Capacidad de almacenamiento",
+                "value-set": "search-result",
+                "sort-mode": "value-name",
+                "sort-direction": "ascending",
+                "unbucketed-values-mode": "show-values",
+                "cutoff-threshold": "5"
+            },
+            {
+                "type": "attribute",
+                "bucket-type": "none",
+                "attribute-id": "cen_color",
+                "system": "false",
+                "display-name": "Color",
+                "value-set": "search-result",
+                "sort-mode": "value-name",
+                "sort-direction": "ascending",
+                "cutoff-threshold": "5"
+            },
+            {
+                "type": "attribute",
+                "bucket-type": "none",
+                "attribute-id": "cenReleaseYear",
+                "system": "false",
+                "display-name": "Año",
                 "value-set": "search-result",
                 "sort-mode": "value-name",
                 "sort-direction": "ascending",
@@ -57,17 +128,11 @@ categories = [
             },
             {
                 "type": "price",
-                "bucket-type": "thresholds",
+                "bucket-type": "none",
                 "display-name": "Precio",
                 "sort-mode": "value-count",
                 "sort-direction": "ascending",
-                "cutoff-threshold": "0",
-                "bucket-definitions": [
-                    {"currency": "GTQ", "display-name": "Hasta Q1000", "threshold": "1000.0"},
-                    {"currency": "GTQ", "display-name": "Q5000 - Q10000", "threshold": "10000.0"},
-                    {"currency": "GTQ", "display-name": "Q10000 - Q20000", "threshold": "20000.0"},
-                    {"currency": "GTQ", "display-name": "Q20000 - Q50000", "threshold": "50000.0"}
-                ]
+                "cutoff-threshold": "0"
             }
         ]
     }

@@ -211,7 +211,7 @@ def convert_boolean_esim_support(custom_attrs, attr_value):
     custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim_support'})
     custom_attr.text = bool_value
 
-def convert_datasheet(custom_attrs, attr_value):
+def create_datasheet(custom_attrs):
     """Crea custom-attribute para cenDataSheet con HTML y CSS embebido
 
     Genera un custom-attribute con estilos CSS y estructura HTML para mostrar
@@ -285,10 +285,10 @@ def add_custom_attributes(product, row, df_columns):
                         convert_boolean_analog_support(custom_attrs, attr_value)
                     elif attr_id == 'cen_esim_support':
                         convert_boolean_esim_support(custom_attrs, attr_value)
-                    elif attr_id == 'cenDataSheet':
-                        convert_datasheet(custom_attrs, attr_value)
                     else:
                         ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+
+    create_datasheet(custom_attrs)
 
 def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
     """Crea opciones de planes para un teléfono POSPAGO"""

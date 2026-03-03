@@ -15,9 +15,9 @@ PRODUCT_OPTION_PLAN = 'planesPostpagoOptions'
 import pandas as pd
 from google.colab import drive
 drive.mount('/content/drive')
-FOLDER = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/25-02-2026/"
+FOLDER = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/02-03-2026/"
 
-df_products_master = pd.read_csv(FOLDER + "[today]item_master.csv")
+df_products_master = pd.read_csv(FOLDER + "[today]item_master_actualizado_final.csv")
 df_products_master_plan = pd.read_csv(FOLDER + "[today]item_Master_Planes.csv")
 df_products_master_relations_phone_plan = pd.read_csv(FOLDER + "[today]Relations-Phone_Plan-PRIORIDAD_PHONE.csv")
 # df_products: df de pre, pos y otros
