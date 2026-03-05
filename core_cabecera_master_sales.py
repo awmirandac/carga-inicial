@@ -1,6 +1,6 @@
 # Constantes
-MASTER_CATALOG_NAME = 'test-claro-master'
-SALES_CATALOG_NAME = 'test-claro-sales'
+MASTER_CATALOG_NAME = 'GT-claro-master'
+SALES_CATALOG_NAME = 'GT-claro-sales'
 
 EXTERNAL_LOCATION_HTTP = 'http://tiendaenlinea.claro.com.gt/cdn/'
 EXTERNAL_LOCATION_HTTPS = 'https://tiendaenlinea.claro.com.gt/cdn/'
@@ -17,7 +17,7 @@ from google.colab import drive
 drive.mount('/content/drive')
 FOLDER = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/02-03-2026/"
 
-df_products_master = pd.read_csv(FOLDER + "[today]item_master_actualizado_final.csv")
+df_products_master = pd.read_csv(FOLDER + "[today]Item_master_actualizado_final.csv")
 df_products_master_plan = pd.read_csv(FOLDER + "[today]item_Master_Planes.csv")
 df_products_master_relations_phone_plan = pd.read_csv(FOLDER + "[today]Relations-Phone_Plan-PRIORIDAD_PHONE.csv")
 # df_products: df de pre, pos y otros
