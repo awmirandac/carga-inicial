@@ -207,7 +207,7 @@ def convert_boolean_esim_support(custom_attrs, attr_value):
 
     Transforma "Yes" a "true" y "No" a "false".
     """
-    bool_value = 'true' if str(attr_value).lower() == 'yes' else 'false'
+    bool_value = 'true'
     custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim_support'})
     custom_attr.text = bool_value
 
@@ -283,7 +283,7 @@ def add_custom_attributes(product, row, df_columns):
                         convert_sns_data(custom_attrs, attr_value)
                     elif attr_id == 'cen_sim_analogic_support':
                         convert_boolean_analog_support(custom_attrs, attr_value)
-                    elif attr_id == 'cen_esim_support':
+                    elif attr_id == 'c_cen_esim_support':
                         convert_boolean_esim_support(custom_attrs, attr_value)
                     else:
                         ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
@@ -320,7 +320,7 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
         option_value = ET.SubElement(option_values, 'option-value', {'value-id': plan_code, 'default': is_default})
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = plan_name
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = offer_price
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = offer_price
 
 def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
     """Crea opciones de teléfonos para un plan CON EQUIPO"""
@@ -370,7 +370,7 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = parent_code
         ET.SubElement(option_value, 'product-id-modifier').text = parent_code
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = '0.00'
 
 def add_product_options(product, row, df_relations, df_plans, df_phones):
     """Añade opciones de producto según tipo (POSPAGO, PREPAGO, PLAN)"""
@@ -410,7 +410,7 @@ def create_product_options(parent, df_options, name):
         option = ET.SubElement(option_values, 'option-value', {'value-id': str(option_row['OPTION_CODE']), 'default': is_default})
         ET.SubElement(option, 'display-value', {'xml:lang': 'x-default'}).text = str(option_row['OPTION_NAME'])
         option_prices = ET.SubElement(option, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = str(option_row['OPTION_PRICE'])
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = str(option_row['OPTION_PRICE'])
 
 ########## CONSTRUCCIÓN DEL CATÁLOGO ##########
 
@@ -449,6 +449,9 @@ def create_parent_product(root, row, df, df_children):
     add_product_images(product, row['ITEM_CODE'])
 
     ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
+    
+    custom_attrs = ET.SubElement(product, 'custom-attributes')
+    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = str(row['ATTR_TEXTO_CUOTAS'])
 
     add_product_variations(product, df_children)
     add_store_attributes(product)
@@ -540,5 +543,5 @@ for option_name, option_data in shared_options.items():
 
 ########## EXPORTAR XML ##########
 tree = ET.ElementTree(root)
-tree.write('master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('carganueva-master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)
