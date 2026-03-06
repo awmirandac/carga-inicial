@@ -91,6 +91,8 @@ def create_variation_attribute(attributes, attr_id, display_name, values):
                 formatted_value = 'Prepago'
             elif value == 'POSPAGO':
                 formatted_value = 'Postpago'
+            elif value == 'OTRO':
+                formatted_value = 'ACCESORIOS'
 
         variation_value = ET.SubElement(variation_values, 'variation-attribute-value', {'value': formatted_value})
         ET.SubElement(variation_value, 'display-value', {'xml:lang': 'x-default'}).text = formatted_value
@@ -126,19 +128,37 @@ def add_product_variations(product, df_prod_attr):
 
     variations = ET.SubElement(product, 'variations')
     attributes = ET.SubElement(variations, 'attributes')
+    
+    df_prod_attr_prepos = df_prod_attr[(df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'PREPAGO') | (df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'POSPAGO')]
+    
 
     # Variaciones de color
-    create_variation_attribute(attributes, 'cen_color', 'Color', df_prod_attr['DEF_COLOR'].unique())
+    create_variation_attribute(attributes, 'cen_color', 'Color', df_prod_attr_prepos['DEF_COLOR'].unique())
 
     # Variaciones de almacenamiento
-    create_variation_attribute(attributes, 'cen_storage', 'Almacenamiento', df_prod_attr['DEF_CAPACIDAD'].unique())
+    create_variation_attribute(attributes, 'cen_storage', 'Almacenamiento', df_prod_attr_prepos['DEF_CAPACIDAD'].unique())
 
     # Variaciones de modalidad
-    create_variation_attribute(attributes, 'cen_modality', 'Modalidad', df_prod_attr['ATTR_CONF_TIPOPRODUCTO'].unique())
-
-    # SKUs de variantes
+    create_variation_attribute(attributes, 'cen_modality', 'Modalidad', df_prod_attr_prepos['ATTR_CONF_TIPOPRODUCTO'].unique())
+    
+    # SKUs de variantes PRE-POS
     variants = ET.SubElement(variations, 'variants')
-    for idx, row in enumerate(df_prod_attr.iterrows()):
+    for idx, row in enumerate(df_prod_attr_prepos.iterrows()):
+        _, product_row = row
+        is_default = 'true' if idx == 0 else 'false'
+        ET.SubElement(variants, 'variant', {
+            'product-id': product_row['ITEM_CODE'],
+            'default': is_default
+        })
+    
+    df_prod_attr_acc = df_prod_attr[df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'OTRO']
+    
+    # Variaciones de color
+    create_variation_attribute(attributes, 'cen_color', 'Color', df_prod_attr_acc['DEF_COLOR'].unique())
+
+    # SKUs de variantes ACCESORIOS
+    variants = ET.SubElement(variations, 'variants')
+    for idx, row in enumerate(df_prod_attr_acc.iterrows()):
         _, product_row = row
         is_default = 'true' if idx == 0 else 'false'
         ET.SubElement(variants, 'variant', {
@@ -243,6 +263,8 @@ def add_custom_attributes(product, row, df_columns):
                         attr_value = 'Prepago'
                     elif attr_value == 'POSPAGO':
                         attr_value = 'Postpago'
+                    elif attr_value == 'OTRO':
+                        attr_value = 'Accesorios'
                 if attr_id == 'attr_conf_modalidad':
                     if attr_value == 'Prepago':
                         attr_value = 'PREPAGO'
@@ -449,6 +471,15 @@ def create_parent_product(root, row, df, df_children):
     add_product_images(product, row['ITEM_CODE'])
 
     ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
+    
+    custom_attrs = ET.SubElement(product, 'custom-attributes')
+    for prefix in ATTR_PREFFIXES:
+        for column_name in df:
+            if column_name.startswith(prefix) and not pd.isna(row[column_name]):
+                attr_id = column_name.lower()
+                if attr_id == 'attr_texto_cuotas':
+                    attr_value = str(row[column_name])
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
 
     add_product_variations(product, df_children)
     add_store_attributes(product)

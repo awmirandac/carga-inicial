@@ -5,7 +5,7 @@ SALES_CATALOG_NAME = 'GT-claro-sales'
 EXTERNAL_LOCATION_HTTP = 'http://tiendaenlinea.claro.com.gt/cdn/'
 EXTERNAL_LOCATION_HTTPS = 'https://tiendaenlinea.claro.com.gt/cdn/'
 
-ATTR_PREFFIXES = ['ATTR_CHARS_', 'ATTR_TECHSPECH_', 'ATTR_CONF_', 'ATTR_DETALLE_', 'CEN_COLOR', 'CEN_STORAGE', 'CEN_MODALITY', 'CATEGORY_CODE', 'attr_conf_modalidad']
+ATTR_PREFFIXES = ['ATTR_CHARS_', 'ATTR_TECHSPECH_', 'ATTR_CONF_', 'ATTR_DETALLE_', 'CEN_COLOR', 'CEN_STORAGE', 'CEN_MODALITY', 'CATEGORY_CODE', 'attr_conf_modalidad', 'ATTR_TEXTO_CUOTAS']
 CEN_PREFFIXES = ['cen_']
 
 PRODUCT_OPTION_PLAN = 'planesPostpagoOptions'
