@@ -91,6 +91,8 @@ def create_variation_attribute(attributes, attr_id, display_name, values):
                 formatted_value = 'Prepago'
             elif value == 'POSPAGO':
                 formatted_value = 'Postpago'
+            elif value == 'OTRO':
+                formatted_value = 'Accesorios'
 
         variation_value = ET.SubElement(variation_values, 'variation-attribute-value', {'value': formatted_value})
         ET.SubElement(variation_value, 'display-value', {'xml:lang': 'x-default'}).text = formatted_value
@@ -118,25 +120,25 @@ def convert_values_custom_attribute(custom_attrs, attr_value, _attr_id):
 
 def add_product_variations(product, df_prod_attr):
     """Añade variaciones (color, almacenamiento, modalidad) a un producto padre"""
-    # Filtrar productos PLAN - no se ligan como variaciones al padre
-    df_prod_attr = df_prod_attr[df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] != 'PLAN']
-    
-    if df_prod_attr.empty or len(df_prod_attr['ITEM_CODE'].unique()) < 1:
-        return
 
     variations = ET.SubElement(product, 'variations')
     attributes = ET.SubElement(variations, 'attributes')
 
-    # Variaciones de color
-    create_variation_attribute(attributes, 'cen_color', 'Color', df_prod_attr['DEF_COLOR'].unique())
+    # Separar por tipo de producto
+    df_prepago_pospago = df_prod_attr[(df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'PREPAGO') | (df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'POSPAGO')]
+    df_otro = df_prod_attr[df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'OTRO']
 
-    # Variaciones de almacenamiento
-    create_variation_attribute(attributes, 'cen_storage', 'Almacenamiento', df_prod_attr['DEF_CAPACIDAD'].unique())
+    # PREPAGO/POSPAGO: 3 variaciones (color, almacenamiento, modalidad)
+    if not df_prepago_pospago.empty:
+        create_variation_attribute(attributes, 'cen_color', 'Color', df_prepago_pospago['DEF_COLOR'].unique())
+        create_variation_attribute(attributes, 'cen_storage', 'Almacenamiento', df_prepago_pospago['DEF_CAPACIDAD'].unique())
+        create_variation_attribute(attributes, 'cen_modality', 'Modalidad', df_prepago_pospago['ATTR_CONF_TIPOPRODUCTO'].unique())
 
-    # Variaciones de modalidad
-    create_variation_attribute(attributes, 'cen_modality', 'Modalidad', df_prod_attr['ATTR_CONF_TIPOPRODUCTO'].unique())
+    # OTRO: solo variación de color
+    if not df_otro.empty:
+        create_variation_attribute(attributes, 'cen_color', 'Color', df_otro['DEF_COLOR'].unique())
 
-    # SKUs de variantes
+    # SKUs de variantes (todos)
     variants = ET.SubElement(variations, 'variants')
     for idx, row in enumerate(df_prod_attr.iterrows()):
         _, product_row = row
