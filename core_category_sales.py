@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 
 
-df_sales_categories = pd.read_csv(FOLDER + "[today]category_sales.csv")
+df_sales_categories = pd.read_csv(FOLDER + "[today_vf]category_sales.csv")
 
 
 # Crear el elemento raíz del XML
@@ -190,7 +190,15 @@ category_hierarchy = {
     'telefono': 'root',
     'planes-postpago': 'root',
     'equipos-y-accesorios': 'root',
-    'planes-claro-hogar': 'root'
+    'planes-claro-hogar': 'root',
+    'adaptadores-y-cables': 'accesorio-movil',
+    'audifonos': 'accesorio-movil',
+    'banda': 'accesorio-movil',
+    'smartwatchs': 'accesorio-movil',
+    'consolas-gaming': 'equipos-claro-hogar',
+    'controles': 'equipos-claro-hogar',
+    'laptops': 'equipos-claro-hogar',
+    'ultra-wifi': 'equipos-claro-hogar'
 }
 
 # AMC-COMMENT: Crear categorías principales (telefono, planes-postpago, equipos-y-accesorios, planes-claro-hogar)
@@ -295,5 +303,5 @@ for index, row in merged_df_plan.iterrows():
 
 # Crear el árbol XML y escribirlo en un archivo
 tree = ET.ElementTree(root)
-tree.write('sales.xml', encoding='utf-8', xml_declaration=True)
+tree.write('carganueva-sales.xml', encoding='utf-8', xml_declaration=True)
 

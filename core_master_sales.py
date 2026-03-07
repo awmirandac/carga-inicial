@@ -373,6 +373,23 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
         ET.SubElement(option_value, 'product-id-modifier').text = parent_code
         option_prices = ET.SubElement(option_value, 'option-value-prices')
         ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = '0.00'
+        
+        # Agregar también los hijos de este padre
+        children_phones = df_phones[df_phones['PRODUCT_CODE_TELV2'] == parent_code]
+        for _, child_row in children_phones.iterrows():
+            child_code = str(child_row['ITEM_CODE'])
+            
+            # Evitar duplicados de hijos
+            if child_code in added_codes:
+                continue
+                
+            added_codes.add(child_code)
+            
+            child_option_value = ET.SubElement(option_values, 'option-value', {'value-id': child_code, 'default': 'false'})
+            ET.SubElement(child_option_value, 'display-value', {'xml:lang': 'x-default'}).text = child_code
+            ET.SubElement(child_option_value, 'product-id-modifier').text = child_code
+            child_option_prices = ET.SubElement(child_option_value, 'option-value-prices')
+            ET.SubElement(child_option_prices, 'option-value-price', {'currency': 'CRC'}).text = '0.00'
 
 def add_product_options(product, row, df_relations, df_plans, df_phones):
     """Añade opciones de producto según tipo (POSPAGO, PREPAGO, PLAN)"""
