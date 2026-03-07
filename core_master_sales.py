@@ -322,7 +322,7 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
         option_value = ET.SubElement(option_values, 'option-value', {'value-id': plan_code, 'default': is_default})
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = plan_name
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = offer_price
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = offer_price
 
 def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
     """Crea opciones de teléfonos para un plan CON EQUIPO"""
@@ -372,7 +372,7 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = parent_code
         ET.SubElement(option_value, 'product-id-modifier').text = parent_code
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = '0.00'
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
         
         # Agregar también los hijos de este padre
         children_phones = df_phones[df_phones['PRODUCT_CODE_TELV2'] == parent_code]
@@ -389,7 +389,7 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
             ET.SubElement(child_option_value, 'display-value', {'xml:lang': 'x-default'}).text = child_code
             ET.SubElement(child_option_value, 'product-id-modifier').text = child_code
             child_option_prices = ET.SubElement(child_option_value, 'option-value-prices')
-            ET.SubElement(child_option_prices, 'option-value-price', {'currency': 'CRC'}).text = '0.00'
+            ET.SubElement(child_option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
 
 def add_product_options(product, row, df_relations, df_plans, df_phones):
     """Añade opciones de producto según tipo (POSPAGO, PREPAGO, PLAN)"""
@@ -429,7 +429,7 @@ def create_product_options(parent, df_options, name):
         option = ET.SubElement(option_values, 'option-value', {'value-id': str(option_row['OPTION_CODE']), 'default': is_default})
         ET.SubElement(option, 'display-value', {'xml:lang': 'x-default'}).text = str(option_row['OPTION_NAME'])
         option_prices = ET.SubElement(option, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'CRC'}).text = str(option_row['OPTION_PRICE'])
+        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = str(option_row['OPTION_PRICE'])
 
 ########## CONSTRUCCIÓN DEL CATÁLOGO ##########
 
@@ -562,5 +562,5 @@ for option_name, option_data in shared_options.items():
 
 ########## EXPORTAR XML ##########
 tree = ET.ElementTree(root)
-tree.write('carganueva-master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('GT-carganueva-master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)

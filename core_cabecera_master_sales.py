@@ -1,6 +1,6 @@
 # Constantes
-MASTER_CATALOG_NAME = 'test-claro-master'
-SALES_CATALOG_NAME = 'test-claro-sales'
+MASTER_CATALOG_NAME = 'GT-claro-master'
+SALES_CATALOG_NAME = 'GT-claro-sales'
 
 EXTERNAL_LOCATION_HTTP = 'http://tiendaenlinea.claro.com.gt/cdn/'
 EXTERNAL_LOCATION_HTTPS = 'https://tiendaenlinea.claro.com.gt/cdn/'
