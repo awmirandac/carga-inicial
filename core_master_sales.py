@@ -471,6 +471,9 @@ def create_parent_product(root, row, df, df_children):
     
     custom_attrs = ET.SubElement(product, 'custom-attributes')
     ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = str(row['ATTR_TEXTO_CUOTAS'])
+    
+    if str(row['ATTR_CONF_TIPOPRODUCTO']) == 'OTRO':
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_conf_tipoproducto'}).text = 'ACCESORIOS'
 
     add_product_variations(product, df_children)
     add_store_attributes(product)
@@ -540,9 +543,9 @@ shared_options = {
         'OPTION_PRICE': [0.00, 0.00]
     },
     'mesesContratoOptions': {
-        'OPTION_CODE': ['12', '18', '24'],
-        'OPTION_NAME': ['12 meses', '18 meses', '24 meses'],
-        'OPTION_PRICE': [0.00, 0.00, 0.00]
+        'OPTION_CODE': ['18', '24'],
+        'OPTION_NAME': ['18 meses', '24 meses'],
+        'OPTION_PRICE': [0.00, 0.00]
     },
     'planConEquipoOptions': {
         'OPTION_CODE': ['PCELN', 'PCERP'],
@@ -562,5 +565,5 @@ for option_name, option_data in shared_options.items():
 
 ########## EXPORTAR XML ##########
 tree = ET.ElementTree(root)
-tree.write('GT-carganueva-master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('GT-modificado-master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)
