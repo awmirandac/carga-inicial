@@ -290,6 +290,33 @@ def add_custom_attributes(product, row, df_columns):
                     else:
                         ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
 
+    for prefix in DESCRIPCION_PREFFIXES:
+        for column_name in df_columns:
+            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+                attr_id = column_name.lower()
+                attr_value = str(row[column_name])
+                ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+                
+    for prefix in PLAN_PREFFIXES:
+        for column_name in df_columns:
+            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+                attr_id = column_name.lower()
+                attr_value = str(row[column_name])
+                if attr_id == 'plan_includes':
+                    convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
+                else:
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+                
+    for prefix in HOGAR_PREFFIXES:
+        for column_name in df_columns:
+            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+                attr_id = column_name.lower()
+                attr_value = str(row[column_name])
+                if attr_id == 'hogar_servicios_adicionales':
+                    convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
+                else: 
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+
     create_datasheet(custom_attrs)
 
 def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
@@ -472,6 +499,11 @@ def create_parent_product(root, row, df, df_children):
     custom_attrs = ET.SubElement(product, 'custom-attributes')
     ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = str(row['ATTR_TEXTO_CUOTAS'])
     
+    if 'cen_5g' in row.index and not pd.isna(row['cen_5g']):
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_5g'}).text = str(row['cen_5g'])
+    if 'cen_esim' in row.index and not pd.isna(row['cen_esim']):
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim'}).text = str(row['cen_esim'])
+    
     if str(row['ATTR_CONF_TIPOPRODUCTO']) == 'OTRO':
         ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_conf_tipoproducto'}).text = 'ACCESORIOS'
 
@@ -525,7 +557,7 @@ def create_child_product(root, row, df_columns):
 dataframes_base = [df_products, df_products_plan_fijo, df_products_options]
 for df in dataframes_base:
     for _, row in df.iterrows():
-        create_child_product(root, row, df_products.columns)
+        create_child_product(root, row, df.columns)
 
 
 ########## CREACIÓN DE PRODUCT OPTIONS GENERALES (SHARED) ##########
@@ -565,5 +597,5 @@ for option_name, option_data in shared_options.items():
 
 ########## EXPORTAR XML ##########
 tree = ET.ElementTree(root)
-tree.write('GT-modificado-master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('GT-carganueva19-master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)

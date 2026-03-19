@@ -260,25 +260,41 @@ for index, category in df_sales_categories.iterrows():
 
 
 # df_products: df de pre, pos y otros
+    # df_prepago_pospago: df de pre y pospago
+    # df_otros: df de otros (accesorios)
 # df_products_plan_fijo: df solo de plan fijo
 # df_products_options: df solo de planes
 
+df_prepago_pospago = df_products[(df_products['ATTR_CONF_TIPOPRODUCTO'] == 'PREPAGO') | (df_products['ATTR_CONF_TIPOPRODUCTO'] == 'POSPAGO')]
+df_otro = df_products[df_products['ATTR_CONF_TIPOPRODUCTO'] == 'OTRO']
 
-merged_df = pd.merge(df_products, df_sales_categories, on='CATEGORY_CODE', how='inner')
+# PRE_POS
+merged_df_prepos = pd.merge(df_prepago_pospago, df_sales_categories, on='CATEGORY_CODE', how='inner')
 
 # AMC-COMMENT: Eliminar duplicados basados en PRODUCT_CODE_TELV2 y categoria para evitar asignaciones repetidas
-merged_df_unique = merged_df.drop_duplicates(subset=['PRODUCT_CODE_TELV2', 'NAME_y'], keep='first')
+merged_df_prepos = merged_df_prepos.drop_duplicates(subset=['PRODUCT_CODE_TELV2', 'NAME_y'], keep='first')
 
 # AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
-for index, row in merged_df_unique.iterrows():
+for index, row in merged_df_prepos.iterrows():
     category_assignment = ET.SubElement(root, 'category-assignment')
     category_assignment.set('category-id', row['NAME_y'])
     category_assignment.set('product-id', row['PRODUCT_CODE_TELV2'])
     ET.SubElement(category_assignment, 'primary-flag').text = 'true'
 
 
-merged_df_plan_fijo = pd.merge(df_products_plan_fijo, df_sales_categories, on='CATEGORY_CODE', how='inner')
+# ACCESORIOS
+merged_df_accesorios = pd.merge(df_otro, df_sales_categories, on='CATEGORY_CODE', how='inner')
 
+# AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
+for index, row in merged_df_accesorios.iterrows():
+    category_assignment = ET.SubElement(root, 'category-assignment')
+    category_assignment.set('category-id', row['NAME_y'])
+    category_assignment.set('product-id', row['ITEM_CODE'])
+    ET.SubElement(category_assignment, 'primary-flag').text = 'true'
+
+
+# PLAN_FIJO
+merged_df_plan_fijo = pd.merge(df_products_plan_fijo, df_sales_categories, on='CATEGORY_CODE', how='inner')
 
 # AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
 for index, row in merged_df_plan_fijo.iterrows():
@@ -288,8 +304,8 @@ for index, row in merged_df_plan_fijo.iterrows():
     ET.SubElement(category_assignment, 'primary-flag').text = 'true'
 
 
+# PLAN
 merged_df_plan = pd.merge(df_products_options, df_sales_categories, on='CATEGORY_CODE', how='inner')
-
 
 # AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
 for index, row in merged_df_plan.iterrows():
@@ -303,5 +319,5 @@ for index, row in merged_df_plan.iterrows():
 
 # Crear el árbol XML y escribirlo en un archivo
 tree = ET.ElementTree(root)
-tree.write('GT-carganueva-sales.xml', encoding='utf-8', xml_declaration=True)
+tree.write('GT-carganueva19-sales.xml', encoding='utf-8', xml_declaration=True)
 
