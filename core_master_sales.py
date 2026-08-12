@@ -331,20 +331,26 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
     ET.SubElement(product_option, 'sort-mode').text = 'price'
     option_values = ET.SubElement(product_option, 'option-values')
 
-    # Eliminar duplicados por PLAN_CODE
-    unique_plans = related_plans.drop_duplicates(subset=['PLAN_CODE'], keep='first')
+    # Filtrar por PAYMENT_TERM == 24 y eliminar duplicados por PLAN_CODE, default primero
+    unique_plans = related_plans[related_plans['PAYMENT_TERM'] == 24].drop_duplicates(subset=['PLAN_CODE'], keep='first')
+    unique_plans = unique_plans.sort_values(by='DEFAULT', ascending=False).reset_index(drop=True)
 
     # Iterar sobre planes relacionados
     for idx_plan, plan_row in unique_plans.iterrows():
         plan_code = str(plan_row['PLAN_CODE'])
+
+        # Validar que PLAN_CODE exista en df_products_options
+        if plan_code not in df_plans['ITEM_CODE'].values:
+            continue
+
         offer_price = str(plan_row['OFFER_PRICE'])
 
         # Obtener nombre del plan
         plan_info = df_plans[df_plans['ITEM_CODE'] == plan_code]
         plan_name = plan_info['NAME'].values[0] if not plan_info.empty else plan_code
 
-        # Determinar si es default
-        is_default = 'true' if idx_plan == unique_plans.index[0] else 'false'
+        # Determinar si es default según columna DEFAULT
+        is_default = 'true' if plan_row['DEFAULT'] == 1 else 'false'
 
         option_value = ET.SubElement(option_values, 'option-value', {'value-id': plan_code, 'default': is_default})
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = plan_name
@@ -575,8 +581,8 @@ shared_options = {
         'OPTION_PRICE': [0.00, 0.00]
     },
     'mesesContratoOptions': {
-        'OPTION_CODE': ['18', '24'],
-        'OPTION_NAME': ['18 meses', '24 meses'],
+        'OPTION_CODE': ['24', '18'],
+        'OPTION_NAME': ['24 meses', '18 meses'],
         'OPTION_PRICE': [0.00, 0.00]
     },
     'planConEquipoOptions': {
@@ -597,5 +603,5 @@ for option_name, option_data in shared_options.items():
 
 ########## EXPORTAR XML ##########
 tree = ET.ElementTree(root)
-tree.write('GT-carganueva19-master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('GT-carganueva23-master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)
