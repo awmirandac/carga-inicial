@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-########## FUNCIONES AUXILIARES ##########
+# %% FUNCIONES AUXILIARES
 
 def create_catalog_header(root):
     """Crea la cabecera del catálogo XML con configuración de imágenes"""
@@ -31,6 +31,18 @@ def add_basic_product_info(product, min_qty='1', step_qty='1'):
     ET.SubElement(product, 'unit')
     ET.SubElement(product, 'min-order-quantity').text = min_qty
     ET.SubElement(product, 'step-quantity').text = step_qty
+
+def add_descriptions(product, row):
+    """Agrega short/long description. Si la columna no existe en la fila, omite el elemento."""
+    columnas = ('ATTR_CHARS_EXT_A_DESC', 'ATTR_CHARS_EXT_B_DESC', 'ATTR_CHARS_EXT_C_DESC')
+
+    if columnas[0] in row.index:
+        ET.SubElement(product, 'short-description', {'xml:lang': 'x-default'}).text = str(row[columnas[0]])
+
+    presentes = [str(row[c]) for c in columnas if c in row.index]
+    if presentes:
+        ET.SubElement(product, 'long-description', {'xml:lang': 'x-default'}).text = ' '.join(presentes)
+
 
 def add_product_flags(product, online=True, available=True, searchable=True):
     """Añade flags de disponibilidad del producto"""
@@ -331,8 +343,8 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
     ET.SubElement(product_option, 'sort-mode').text = 'price'
     option_values = ET.SubElement(product_option, 'option-values')
 
-    # Filtrar por PAYMENT_TERM == 24 y eliminar duplicados por PLAN_CODE, default primero
-    unique_plans = related_plans[related_plans['PAYMENT_TERM'] == 24].drop_duplicates(subset=['PLAN_CODE'], keep='first')
+    # Filtrar por PAYMENT_TERM y eliminar duplicados por PLAN_CODE, default primero
+    unique_plans = related_plans[related_plans['PAYMENT_TERM'] == PAYMENT_TERM].drop_duplicates(subset=['PLAN_CODE'], keep='first')
     unique_plans = unique_plans.sort_values(by='DEFAULT', ascending=False).reset_index(drop=True)
 
     # Iterar sobre planes relacionados
@@ -355,7 +367,7 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
         option_value = ET.SubElement(option_values, 'option-value', {'value-id': plan_code, 'default': is_default})
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = plan_name
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = offer_price
+        ET.SubElement(option_prices, 'option-value-price', {'currency': CURRENCY}).text = offer_price
 
 def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
     """Crea opciones de teléfonos para un plan CON EQUIPO"""
@@ -405,10 +417,13 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = parent_code
         ET.SubElement(option_value, 'product-id-modifier').text = parent_code
         option_prices = ET.SubElement(option_value, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
+        ET.SubElement(option_prices, 'option-value-price', {'currency': CURRENCY}).text = '0.00'
         
-        # Agregar también los hijos de este padre
-        children_phones = df_phones[df_phones['PRODUCT_CODE_TELV2'] == parent_code]
+        # Agregar también los hijos de este padre (solo postpago)
+        children_phones = df_phones[
+            (df_phones['PRODUCT_CODE_TELV2'] == parent_code) &
+            (df_phones['ATTR_CONF_TIPOPRODUCTO'] == 'POSPAGO')
+        ]
         for _, child_row in children_phones.iterrows():
             child_code = str(child_row['ITEM_CODE'])
             
@@ -422,7 +437,7 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
             ET.SubElement(child_option_value, 'display-value', {'xml:lang': 'x-default'}).text = child_code
             ET.SubElement(child_option_value, 'product-id-modifier').text = child_code
             child_option_prices = ET.SubElement(child_option_value, 'option-value-prices')
-            ET.SubElement(child_option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
+            ET.SubElement(child_option_prices, 'option-value-price', {'currency': CURRENCY}).text = '0.00'
 
 def add_product_options(product, row, df_relations, df_plans, df_phones):
     """Añade opciones de producto según tipo (POSPAGO, PREPAGO, PLAN)"""
@@ -449,6 +464,12 @@ def add_product_options(product, row, df_relations, df_plans, df_phones):
         elif row['CLASIFICACION'] == 'SIN EQUIPO':
             ET.SubElement(options, 'shared-option', {'option-id': 'planSinEquipoOptions'})
             ET.SubElement(options, 'shared-option', {'option-id': 'mesesContratoOptions'})
+            
+        elif row['CLASIFICACION'] == 'CON Y SIN EQUIPO':
+            create_phone_options_for_plan(options, str(row['ITEM_CODE']), df_relations, df_phones)
+            ET.SubElement(options, 'shared-option', {'option-id': 'planConEquipoOptions'})
+            ET.SubElement(options, 'shared-option', {'option-id': 'planSinEquipoOptions'})
+            ET.SubElement(options, 'shared-option', {'option-id': 'mesesContratoOptions'})
 
 def create_product_options(parent, df_options, name):
     """Crea product options generales (shared options)"""
@@ -462,9 +483,9 @@ def create_product_options(parent, df_options, name):
         option = ET.SubElement(option_values, 'option-value', {'value-id': str(option_row['OPTION_CODE']), 'default': is_default})
         ET.SubElement(option, 'display-value', {'xml:lang': 'x-default'}).text = str(option_row['OPTION_NAME'])
         option_prices = ET.SubElement(option, 'option-value-prices')
-        ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = str(option_row['OPTION_PRICE'])
+        ET.SubElement(option_prices, 'option-value-price', {'currency': CURRENCY}).text = str(option_row['OPTION_PRICE'])
 
-########## CONSTRUCCIÓN DEL CATÁLOGO ##########
+# %% CONSTRUCCIÓN DEL CATÁLOGO
 
 # Crear el elemento raíz del XML
 root = ET.Element('catalog')
@@ -475,7 +496,7 @@ root.set('catalog-id', MASTER_CATALOG_NAME)
 create_catalog_header(root)
 
 
-########## CREACIÓN DE PRODUCTOS PADRES (CON VARIACIONES) ##########
+# %% CREACIÓN DE PRODUCTOS PADRES (CON VARIACIONES)
 
 def create_parent_product(root, row, df, df_children):
     """Crea un producto padre con sus variaciones"""
@@ -493,17 +514,17 @@ def create_parent_product(root, row, df, df_children):
 
     # Display name y descripciones
     ET.SubElement(product, 'display-name', {'xml:lang': 'x-default'}).text = display_name
-    ET.SubElement(product, 'short-description', {'xml:lang': 'x-default'}).text = str(row['ATTR_CHARS_EXT_A_DESC'])
-    long_desc = f"{row['ATTR_CHARS_EXT_A_DESC']} {row['ATTR_CHARS_EXT_B_DESC']} {row['ATTR_CHARS_EXT_C_DESC']}"
-    ET.SubElement(product, 'long-description', {'xml:lang': 'x-default'}).text = str(long_desc)
+    add_descriptions(product, row)
 
     add_product_flags(product)
     add_product_images(product, row['ITEM_CODE'])
 
-    ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
+    if 'FILT_MARCA' in row.index:
+        ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
     
     custom_attrs = ET.SubElement(product, 'custom-attributes')
-    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = str(row['ATTR_TEXTO_CUOTAS'])
+    if 'ATTR_TEXTO_CUOTAS' in row.index:
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = str(row['ATTR_TEXTO_CUOTAS'])
     
     if 'cen_5g' in row.index and not pd.isna(row['cen_5g']):
         ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_5g'}).text = str(row['cen_5g'])
@@ -530,7 +551,7 @@ for df in dataframes_base_codes:
         create_parent_product(root, row, df, df_children)
 
 
-########## CREACIÓN DE PRODUCTOS INDIVIDUALES (HIJOS) ##########
+# %% CREACIÓN DE PRODUCTOS INDIVIDUALES (HIJOS)
 
 def create_child_product(root, row, df_columns):
     """Crea un producto individual (hijo/variante)"""
@@ -539,16 +560,15 @@ def create_child_product(root, row, df_columns):
 
     # Display name y descripciones
     ET.SubElement(product, 'display-name', {'xml:lang': 'x-default'}).text = row['NAME']
-    ET.SubElement(product, 'short-description', {'xml:lang': 'x-default'}).text = str(row['ATTR_CHARS_EXT_A_DESC'])
-    long_desc = f"{row['ATTR_CHARS_EXT_A_DESC']} {row['ATTR_CHARS_EXT_B_DESC']} {row['ATTR_CHARS_EXT_C_DESC']}"
-    ET.SubElement(product, 'long-description', {'xml:lang': 'x-default'}).text = str(long_desc)
+    add_descriptions(product, row)
 
     add_product_flags(product)
     # Agregar imágenes si es PLAN, si no es variante no agrega imágenes
     if row['ATTR_CONF_TIPOPRODUCTO'] == 'PLAN':
         add_product_images(product, row['ITEM_CODE'])
 
-    ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
+    if 'FILT_MARCA' in row.index:
+        ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
 
     # Custom attributes
     add_custom_attributes(product, row, df_columns)
@@ -566,7 +586,7 @@ for df in dataframes_base:
         create_child_product(root, row, df.columns)
 
 
-########## CREACIÓN DE PRODUCT OPTIONS GENERALES (SHARED) ##########
+# %% CREACIÓN DE PRODUCT OPTIONS GENERALES (SHARED)
 
 # Definir opciones compartidas
 shared_options = {
@@ -601,7 +621,7 @@ shared_options = {
 for option_name, option_data in shared_options.items():
     create_product_options(root, pd.DataFrame(option_data), option_name)
 
-########## EXPORTAR XML ##########
+# %% EXPORTAR XML
 tree = ET.ElementTree(root)
-tree.write('GT-carganueva23-master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('NI-cargaX-master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)

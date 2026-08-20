@@ -1,9 +1,14 @@
-# Constantes
-MASTER_CATALOG_NAME = 'GT-claro-master'
-SALES_CATALOG_NAME = 'GT-claro-sales'
+# %% Constantes
+MASTER_CATALOG_NAME = 'NI-test-claro-master'
+SALES_CATALOG_NAME = 'NI-test-claro-sales'
 
-EXTERNAL_LOCATION_HTTP = 'http://tiendaenlinea.claro.com.gt/cdn/'
-EXTERNAL_LOCATION_HTTPS = 'https://tiendaenlinea.claro.com.gt/cdn/'
+EXTERNAL_LOCATION_HTTP = 'http://tiendaenlinea.claro.com.ni/cdn/'
+EXTERNAL_LOCATION_HTTPS = 'https://tiendaenlinea.claro.com.ni/cdn/'
+
+# Moneda del catalogo (tal como figura en la matriz)
+CURRENCY = 'NIO'
+# Plazo de financiamiento vigente en Nicaragua
+PAYMENT_TERM = 18
 
 ATTR_PREFFIXES = ['ATTR_CHARS_', 'ATTR_TECHSPECH_', 'ATTR_CONF_', 'ATTR_DETALLE_', 'CEN_COLOR', 'CEN_STORAGE', 'CEN_MODALITY', 'CATEGORY_CODE', 'attr_conf_modalidad', 'ATTR_TEXTO_CUOTAS']
 CEN_PREFFIXES = ['cen_', 'c_cen_esim_support']
@@ -13,17 +18,70 @@ HOGAR_PREFFIXES = ['hogar_']
 
 PRODUCT_OPTION_PLAN = 'planesPostpagoOptions'
 
-########################################################################################################################################
+# %% Carga de datos (Google Sheet)
 
+import csv
+import io
+import os
+
+import gspread
 import pandas as pd
-from google.colab import drive
-drive.mount('/content/drive')
-FOLDER_CARGA_23_03 = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/23-03-2026/"
-FOLDER_NUEVA_CARGA = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/18-03-2026/"
 
-df_products_master = pd.read_csv(FOLDER_CARGA_23_03 + "Item_Master_23_03_26.csv")
-df_products_master_plan = pd.read_csv(FOLDER_NUEVA_CARGA + "[dev]Item_Master_Planes_18_03_26.csv")
-df_products_master_relations_phone_plan = pd.read_csv(FOLDER_CARGA_23_03 + "Relations-phone-plan.csv")
+# Fuente unica: el Google Sheet "Matrices(AVATAR)" y sus 4 pestanas
+SHEET_ID = "1a-CEDonuVejvxHig8QCn-1hGXN2GJGdYJGHhr0R-Mi4"
+
+# Credenciales de la cuenta de servicio (solo se usan fuera de Colab)
+RUTA_CREDENCIALES = os.path.expanduser("~/.config/gspread/service_account.json")
+
+# (nombre de la pestana, posicion de respaldo si el nombre llegara a cambiar)
+HOJA_EQUIPOS    = ('PRE-POS-ACC', 0)        # prepago, pospago y accesorios
+HOJA_PLANES     = ('PLANES-POSTPAGO', 1)    # planes y plan fijo
+HOJA_RELACIONES = ('RELATIONS', 2)          # relacion telefono-plan
+HOJA_CATEGORIAS = ('CATEGORY_SALES', 3)     # arbol de categorias del catalogo de ventas
+
+
+def conectar():
+    """En Colab autentica con la sesion del usuario; en local, con la cuenta de servicio."""
+    try:
+        from google.auth import default
+        from google.colab import auth
+        auth.authenticate_user()
+        credenciales, _ = default()
+        return gspread.authorize(credenciales)
+    except ImportError:
+        if not os.path.exists(RUTA_CREDENCIALES):
+            raise FileNotFoundError(
+                f"No se encontraron las credenciales en {RUTA_CREDENCIALES}")
+        return gspread.service_account(filename=RUTA_CREDENCIALES)
+
+
+spreadsheet = conectar().open_by_key(SHEET_ID)
+pestanas = {ws.title: ws for ws in spreadsheet.worksheets()}
+print("Pestanas encontradas:", list(pestanas))
+
+
+def leer_hoja(hoja):
+    """Devuelve la pestana como dataframe, con el mismo parseo que tenia el CSV exportado."""
+    nombre, posicion = hoja
+    if nombre in pestanas:
+        ws = pestanas[nombre]
+    else:
+        titulos = list(pestanas)
+        if posicion >= len(titulos):
+            raise KeyError(f"No se encontro la pestana '{nombre}'. Disponibles: {titulos}")
+        ws = pestanas[titulos[posicion]]
+        print(f"AVISO: no existe la pestana '{nombre}', se usa '{ws.title}' (posicion {posicion})")
+
+    buffer = io.StringIO()
+    csv.writer(buffer).writerows(ws.get_all_values())
+    buffer.seek(0)
+    return pd.read_csv(buffer)
+
+
+df_products_master = leer_hoja(HOJA_EQUIPOS)
+df_products_master_plan = leer_hoja(HOJA_PLANES)
+df_products_master_relations_phone_plan = leer_hoja(HOJA_RELACIONES)
+df_sales_categories = leer_hoja(HOJA_CATEGORIAS)
 # df_products: df de pre, pos y otros
 df_products = df_products_master
 # df_products_plan_fijo: df solo de plan fijo
@@ -43,7 +101,7 @@ df_products_options['CEN_COLOR']    = df_products_options['DEF_COLOR']
 df_products_options['CEN_STORAGE']  = df_products_options['DEF_CAPACIDAD']
 df_products_options['CEN_MODALITY']  = df_products_options['ATTR_CONF_TIPOPRODUCTO']
 
-########################################################################################################################################
+# %% Limpieza de dataframes
 
 dataframes_to_clean = [df_products, df_products_plan_fijo, df_products_options]
 

@@ -1,7 +1,8 @@
+# %% Catalogo de ventas: categorias
 import xml.etree.ElementTree as ET
 
 
-df_sales_categories = pd.read_csv(FOLDER + "[today_vf]category_sales.csv")
+# df_sales_categories se carga en la cabecera desde la pestana CATEGORY_SALES
 
 
 # Crear el elemento raíz del XML
@@ -176,79 +177,50 @@ for category in categories:
   add_refinement_definitions(category_elem, category.get('refinement-definitions', []))
 
 
-# AMC-COMMENT: Definir estructura de árbol de categorías
-category_hierarchy = {
-    'prepago': 'telefono',
-    'postpago': 'telefono',
-    'con-equipo': 'planes-postpago',
-    'sin-equipo': 'planes-postpago',
-    'accesorio-movil': 'equipos-y-accesorios',
-    'equipos-claro-hogar': 'equipos-y-accesorios',
-    'claro-hogar-doble': 'planes-claro-hogar',
-    'claro-hogar-triple': 'planes-claro-hogar',
-    'internet-fijo-inalambrico': 'planes-claro-hogar',
-    'telefono': 'root',
-    'planes-postpago': 'root',
-    'equipos-y-accesorios': 'root',
-    'planes-claro-hogar': 'root',
-    'adaptadores-y-cables': 'accesorio-movil',
-    'audifonos': 'accesorio-movil',
-    'banda': 'accesorio-movil',
-    'smartwatchs': 'accesorio-movil',
-    'consolas-gaming': 'equipos-claro-hogar',
-    'controles': 'equipos-claro-hogar',
-    'laptops': 'equipos-claro-hogar',
-    'ultra-wifi': 'equipos-claro-hogar'
-}
-
-# AMC-COMMENT: Crear categorías principales (telefono, planes-postpago, equipos-y-accesorios, planes-claro-hogar)
-main_categories = [
-    {'name': 'telefono', 'display-name': 'Teléfonos', 'description': 'Categoría de teléfonos'},
-    {'name': 'planes-postpago', 'display-name': 'Planes Postpago', 'description': 'Categoría de planes postpago'},
-    {'name': 'equipos-y-accesorios', 'display-name': 'Equipos y Accesorios', 'description': 'Categoría de equipos y accesorios'},
-    {'name': 'planes-claro-hogar', 'display-name': 'Planes Claro Hogar', 'description': 'Categoría de planes Claro Hogar'}
-]
-
-for main_cat in main_categories:
-    category_elem = ET.SubElement(root, 'category', {'category-id': main_cat['name']})
-    ET.SubElement(category_elem, 'display-name', attrib={'xml:lang': 'x-default'}).text = main_cat['display-name']
-    ET.SubElement(category_elem, 'description', attrib={'xml:lang': 'x-default'}).text = main_cat['description']
-    ET.SubElement(category_elem, 'online-flag').text = 'true'
-    ET.SubElement(category_elem, 'parent').text = 'root'
-    ET.SubElement(category_elem, 'template')
-    ET.SubElement(category_elem, 'page-attributes')
-    add_custom_attributes(category_elem, [
-        {"attribute-id": "enableCompare", "value": "false"},
-        {"attribute-id": "showInMenu", "value": "true"}
-    ])
-
-# AMC-COMMENT: Creacion de categorias independientes (<category category-id="col.NAME">)
-# Crear elementos 'category' en el XML (excluyendo las categorías principales ya creadas)
-main_category_names = ['telefono', 'planes-postpago', 'equipos-y-accesorios', 'planes-claro-hogar']
+# AMC-COMMENT: Definir estructura de árbol de categorías desde la pestana CATEGORY_SALES
+# La hoja es la fuente de verdad: cada fila declara su NAME y de quien cuelga en PARENT_CODE.
+category_hierarchy = {}
+category_descriptions = {}
 
 for index, category in df_sales_categories.iterrows():
-    category_name = category['NAME']
-    
-    # Saltar si es una categoría principal (ya fue creada)
-    if category_name in main_category_names:
-        continue
-    
+    category_name = str(category['NAME'])
+    parent_code = category['PARENT_CODE']
+    category_hierarchy[category_name] = 'root' if pd.isna(parent_code) else str(parent_code)
+
+    if pd.notna(category['DESCRIPTION']):
+        category_descriptions[category_name] = str(category['DESCRIPTION'])
+
+# AMC-COMMENT: Las ramas principales que solo figuran como PARENT_CODE (sin fila propia
+# en la hoja) se deducen y cuelgan de root
+for parent_code in df_sales_categories['PARENT_CODE'].dropna().unique():
+    if str(parent_code) not in category_hierarchy:
+        category_hierarchy[str(parent_code)] = 'root'
+
+
+def profundidad_de_categoria(categoria):
+    """Cuantos niveles hay entre la categoria y root."""
+    niveles = 0
+    visitadas = set()
+    while categoria in category_hierarchy and categoria not in visitadas:
+        visitadas.add(categoria)
+        categoria = category_hierarchy[categoria]
+        niveles += 1
+    return niveles
+
+
+# AMC-COMMENT: Creacion de categorias (<category category-id="col.NAME">)
+# Se emiten de la mas general a la mas especifica para que el padre exista antes que el hijo
+for category_name in sorted(category_hierarchy, key=lambda nombre: (profundidad_de_categoria(nombre), nombre)):
     category_elem = ET.SubElement(root, 'category', {'category-id': category_name})
     ET.SubElement(category_elem, 'display-name', attrib={'xml:lang': 'x-default'}).text = category_name
-    
-    # Agregar description si existe
-    if pd.notna(category['DESCRIPTION']):
-        ET.SubElement(category_elem, 'description', attrib={'xml:lang': 'x-default'}).text = str(category['DESCRIPTION'])
-    
-    ET.SubElement(category_elem, 'online-flag').text = 'true'
 
-    # Agregar parent según la jerarquía definida
-    if category_name in category_hierarchy:
-        ET.SubElement(category_elem, 'parent').text = category_hierarchy[category_name]
-    else:
-        # Si no está en la jerarquía, usar 'root' por defecto
-        ET.SubElement(category_elem, 'parent').text = 'root'
-    
+    # Agregar description si la hoja la trae
+    if category_name in category_descriptions:
+        ET.SubElement(category_elem, 'description', attrib={'xml:lang': 'x-default'}).text = category_descriptions[category_name]
+
+    ET.SubElement(category_elem, 'online-flag').text = 'true'
+    ET.SubElement(category_elem, 'parent').text = category_hierarchy[category_name]
+
     # Agregar elementos vacíos
     ET.SubElement(category_elem, 'template')
     ET.SubElement(category_elem, 'page-attributes')
@@ -259,6 +231,8 @@ for index, category in df_sales_categories.iterrows():
         ])
 
 
+# %% Asignacion de productos a categorias
+
 # df_products: df de pre, pos y otros
     # df_prepago_pospago: df de pre y pospago
     # df_otros: df de otros (accesorios)
@@ -268,56 +242,78 @@ for index, category in df_sales_categories.iterrows():
 df_prepago_pospago = df_products[(df_products['ATTR_CONF_TIPOPRODUCTO'] == 'PREPAGO') | (df_products['ATTR_CONF_TIPOPRODUCTO'] == 'POSPAGO')]
 df_otro = df_products[df_products['ATTR_CONF_TIPOPRODUCTO'] == 'OTRO']
 
-# PRE_POS
-merged_df_prepos = pd.merge(df_prepago_pospago, df_sales_categories, on='CATEGORY_CODE', how='inner')
+def cadena_de_categorias(categoria):
+    """Devuelve la categoria y todos sus ancestros segun el arbol, de la mas general a la mas especifica.
 
-# AMC-COMMENT: Eliminar duplicados basados en PRODUCT_CODE_TELV2 y categoria para evitar asignaciones repetidas
-merged_df_prepos = merged_df_prepos.drop_duplicates(subset=['PRODUCT_CODE_TELV2', 'NAME_y'], keep='first')
+    Camina category_hierarchy hacia arriba hasta root (root no se asigna).
+    """
+    cadena = []
+    actual = categoria
+    while actual and actual != 'root' and actual not in cadena:
+        cadena.append(actual)
+        actual = category_hierarchy.get(actual)
 
-# AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
-for index, row in merged_df_prepos.iterrows():
-    category_assignment = ET.SubElement(root, 'category-assignment')
-    category_assignment.set('category-id', row['NAME_y'])
-    category_assignment.set('product-id', row['PRODUCT_CODE_TELV2'])
-    ET.SubElement(category_assignment, 'primary-flag').text = 'true'
-
-
-# ACCESORIOS
-merged_df_accesorios = pd.merge(df_otro, df_sales_categories, on='CATEGORY_CODE', how='inner')
-
-# AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
-for index, row in merged_df_accesorios.iterrows():
-    category_assignment = ET.SubElement(root, 'category-assignment')
-    category_assignment.set('category-id', row['NAME_y'])
-    category_assignment.set('product-id', row['ITEM_CODE'])
-    ET.SubElement(category_assignment, 'primary-flag').text = 'true'
+    return list(reversed(cadena))
 
 
-# PLAN_FIJO
-merged_df_plan_fijo = pd.merge(df_products_plan_fijo, df_sales_categories, on='CATEGORY_CODE', how='inner')
+def categorias_de_producto(category_code):
+    """Devuelve todas las categorias del arbol a las que pertenece un producto.
 
-# AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
-for index, row in merged_df_plan_fijo.iterrows():
-    category_assignment = ET.SubElement(root, 'category-assignment')
-    category_assignment.set('category-id', row['NAME_y'])
-    category_assignment.set('product-id', row['ITEM_CODE'])
-    ET.SubElement(category_assignment, 'primary-flag').text = 'true'
+    El CATEGORY_CODE es la ruta de la categoria hoja
+    ('equipos-y-accesorios/accesorio-movil/audifonos') y una celda puede traer
+    varias rutas separadas por salto de linea. De cada ruta se toma la hoja y se
+    expande su rama completa. El resultado va de la mas general a la mas especifica.
+    """
+    if pd.isna(category_code):
+        return []
+
+    resultado = []
+    for ruta in str(category_code).split('\n'):
+        segmentos = [s for s in ruta.strip().split('/') if s]
+        if not segmentos:
+            continue
+        for categoria in cadena_de_categorias(segmentos[-1]):
+            if categoria not in resultado:
+                resultado.append(categoria)
+
+    return resultado
 
 
-# PLAN
-merged_df_plan = pd.merge(df_products_options, df_sales_categories, on='CATEGORY_CODE', how='inner')
+def asignar_productos(df, columna_producto):
+    """Asigna cada producto a su categoria hoja y a todos sus niveles superiores."""
+    asignados = set()
+    primarios = set()
 
-# AMC-COMMENT: Asigna cada producto a una categoria especifica (<category-assignment category-id="col.NAME" product-id="ABC123">)
-for index, row in merged_df_plan.iterrows():
-    category_assignment = ET.SubElement(root, 'category-assignment')
-    category_assignment.set('category-id', row['NAME_y'])
-    category_assignment.set('product-id', row['ITEM_CODE'])
-    ET.SubElement(category_assignment, 'primary-flag').text = 'true'
+    for index, row in df.iterrows():
+        product_id = str(row[columna_producto])
+
+        for categoria in categorias_de_producto(row['CATEGORY_CODE']):
+            if (categoria, product_id) in asignados:
+                continue
+            asignados.add((categoria, product_id))
+
+            category_assignment = ET.SubElement(root, 'category-assignment')
+            category_assignment.set('category-id', categoria)
+            category_assignment.set('product-id', product_id)
+
+            # Un producto solo puede tener una categoria primaria: la rama principal
+            if product_id not in primarios:
+                primarios.add(product_id)
+                ET.SubElement(category_assignment, 'primary-flag').text = 'true'
 
 
+# Telefonos: el producto padre y cada variante van a la categoria de modalidad y a telefono
+asignar_productos(df_prepago_pospago, 'PRODUCT_CODE_TELV2')
+asignar_productos(df_prepago_pospago, 'ITEM_CODE')
+
+# Accesorios, plan fijo y planes: solo el producto hijo
+asignar_productos(df_otro, 'ITEM_CODE')
+asignar_productos(df_products_plan_fijo, 'ITEM_CODE')
+asignar_productos(df_products_options, 'ITEM_CODE')
 
 
+# %% Exportar XML
 # Crear el árbol XML y escribirlo en un archivo
 tree = ET.ElementTree(root)
-tree.write('GT-carganueva19-sales.xml', encoding='utf-8', xml_declaration=True)
+tree.write('NI-cargaX-sales.xml', encoding='utf-8', xml_declaration=True)
 
