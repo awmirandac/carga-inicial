@@ -92,7 +92,7 @@ def create_variation_attribute(attributes, attr_id, display_name, values):
             elif value == 'POSPAGO':
                 formatted_value = 'Postpago'
             elif value == 'OTRO':
-                formatted_value = 'ACCESORIOS'
+                formatted_value = 'Accesorios'
 
         variation_value = ET.SubElement(variation_values, 'variation-attribute-value', {'value': formatted_value})
         ET.SubElement(variation_value, 'display-value', {'xml:lang': 'x-default'}).text = formatted_value
@@ -120,45 +120,27 @@ def convert_values_custom_attribute(custom_attrs, attr_value, _attr_id):
 
 def add_product_variations(product, df_prod_attr):
     """Añade variaciones (color, almacenamiento, modalidad) a un producto padre"""
-    # Filtrar productos PLAN - no se ligan como variaciones al padre
-    df_prod_attr = df_prod_attr[df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] != 'PLAN']
-    
-    if df_prod_attr.empty or len(df_prod_attr['ITEM_CODE'].unique()) < 1:
-        return
 
     variations = ET.SubElement(product, 'variations')
     attributes = ET.SubElement(variations, 'attributes')
-    
-    df_prod_attr_prepos = df_prod_attr[(df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'PREPAGO') | (df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'POSPAGO')]
-    
 
-    # Variaciones de color
-    create_variation_attribute(attributes, 'cen_color', 'Color', df_prod_attr_prepos['DEF_COLOR'].unique())
+    # Separar por tipo de producto
+    df_prepago_pospago = df_prod_attr[(df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'PREPAGO') | (df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'POSPAGO')]
+    df_otro = df_prod_attr[df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'OTRO']
 
-    # Variaciones de almacenamiento
-    create_variation_attribute(attributes, 'cen_storage', 'Almacenamiento', df_prod_attr_prepos['DEF_CAPACIDAD'].unique())
+    # PREPAGO/POSPAGO: 3 variaciones (color, almacenamiento, modalidad)
+    if not df_prepago_pospago.empty:
+        create_variation_attribute(attributes, 'cen_color', 'Color', df_prepago_pospago['DEF_COLOR'].unique())
+        create_variation_attribute(attributes, 'cen_storage', 'Almacenamiento', df_prepago_pospago['DEF_CAPACIDAD'].unique())
+        create_variation_attribute(attributes, 'cen_modality', 'Modalidad', df_prepago_pospago['ATTR_CONF_TIPOPRODUCTO'].unique())
 
-    # Variaciones de modalidad
-    create_variation_attribute(attributes, 'cen_modality', 'Modalidad', df_prod_attr_prepos['ATTR_CONF_TIPOPRODUCTO'].unique())
-    
-    # SKUs de variantes PRE-POS
+    # OTRO: solo variación de color
+    if not df_otro.empty:
+        create_variation_attribute(attributes, 'cen_color', 'Color', df_otro['DEF_COLOR'].unique())
+
+    # SKUs de variantes (todos)
     variants = ET.SubElement(variations, 'variants')
-    for idx, row in enumerate(df_prod_attr_prepos.iterrows()):
-        _, product_row = row
-        is_default = 'true' if idx == 0 else 'false'
-        ET.SubElement(variants, 'variant', {
-            'product-id': product_row['ITEM_CODE'],
-            'default': is_default
-        })
-    
-    df_prod_attr_acc = df_prod_attr[df_prod_attr['ATTR_CONF_TIPOPRODUCTO'] == 'OTRO']
-    
-    # Variaciones de color
-    create_variation_attribute(attributes, 'cen_color', 'Color', df_prod_attr_acc['DEF_COLOR'].unique())
-
-    # SKUs de variantes ACCESORIOS
-    variants = ET.SubElement(variations, 'variants')
-    for idx, row in enumerate(df_prod_attr_acc.iterrows()):
+    for idx, row in enumerate(df_prod_attr.iterrows()):
         _, product_row = row
         is_default = 'true' if idx == 0 else 'false'
         ET.SubElement(variants, 'variant', {
@@ -227,7 +209,7 @@ def convert_boolean_esim_support(custom_attrs, attr_value):
 
     Transforma "Yes" a "true" y "No" a "false".
     """
-    bool_value = 'true' if str(attr_value).lower() == 'yes' else 'false'
+    bool_value = 'true'
     custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim_support'})
     custom_attr.text = bool_value
 
@@ -263,8 +245,6 @@ def add_custom_attributes(product, row, df_columns):
                         attr_value = 'Prepago'
                     elif attr_value == 'POSPAGO':
                         attr_value = 'Postpago'
-                    elif attr_value == 'OTRO':
-                        attr_value = 'Accesorios'
                 if attr_id == 'attr_conf_modalidad':
                     if attr_value == 'Prepago':
                         attr_value = 'PREPAGO'
@@ -305,10 +285,37 @@ def add_custom_attributes(product, row, df_columns):
                         convert_sns_data(custom_attrs, attr_value)
                     elif attr_id == 'cen_sim_analogic_support':
                         convert_boolean_analog_support(custom_attrs, attr_value)
-                    elif attr_id == 'cen_esim_support':
+                    elif attr_id == 'c_cen_esim_support':
                         convert_boolean_esim_support(custom_attrs, attr_value)
                     else:
                         ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+
+    for prefix in DESCRIPCION_PREFFIXES:
+        for column_name in df_columns:
+            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+                attr_id = column_name.lower()
+                attr_value = str(row[column_name])
+                ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+                
+    for prefix in PLAN_PREFFIXES:
+        for column_name in df_columns:
+            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+                attr_id = column_name.lower()
+                attr_value = str(row[column_name])
+                if attr_id == 'plan_includes':
+                    convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
+                else:
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+                
+    for prefix in HOGAR_PREFFIXES:
+        for column_name in df_columns:
+            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+                attr_id = column_name.lower()
+                attr_value = str(row[column_name])
+                if attr_id == 'hogar_servicios_adicionales':
+                    convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
+                else: 
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
 
     create_datasheet(custom_attrs)
 
@@ -324,20 +331,26 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
     ET.SubElement(product_option, 'sort-mode').text = 'price'
     option_values = ET.SubElement(product_option, 'option-values')
 
-    # Eliminar duplicados por PLAN_CODE
-    unique_plans = related_plans.drop_duplicates(subset=['PLAN_CODE'], keep='first')
+    # Filtrar por PAYMENT_TERM == 24 y eliminar duplicados por PLAN_CODE, default primero
+    unique_plans = related_plans[related_plans['PAYMENT_TERM'] == 24].drop_duplicates(subset=['PLAN_CODE'], keep='first')
+    unique_plans = unique_plans.sort_values(by='DEFAULT', ascending=False).reset_index(drop=True)
 
     # Iterar sobre planes relacionados
     for idx_plan, plan_row in unique_plans.iterrows():
         plan_code = str(plan_row['PLAN_CODE'])
+
+        # Validar que PLAN_CODE exista en df_products_options
+        if plan_code not in df_plans['ITEM_CODE'].values:
+            continue
+
         offer_price = str(plan_row['OFFER_PRICE'])
 
         # Obtener nombre del plan
         plan_info = df_plans[df_plans['ITEM_CODE'] == plan_code]
         plan_name = plan_info['NAME'].values[0] if not plan_info.empty else plan_code
 
-        # Determinar si es default
-        is_default = 'true' if idx_plan == unique_plans.index[0] else 'false'
+        # Determinar si es default según columna DEFAULT
+        is_default = 'true' if plan_row['DEFAULT'] == 1 else 'false'
 
         option_value = ET.SubElement(option_values, 'option-value', {'value-id': plan_code, 'default': is_default})
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = plan_name
@@ -393,6 +406,23 @@ def create_phone_options_for_plan(options, plan_code, df_relations, df_phones):
         ET.SubElement(option_value, 'product-id-modifier').text = parent_code
         option_prices = ET.SubElement(option_value, 'option-value-prices')
         ET.SubElement(option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
+        
+        # Agregar también los hijos de este padre
+        children_phones = df_phones[df_phones['PRODUCT_CODE_TELV2'] == parent_code]
+        for _, child_row in children_phones.iterrows():
+            child_code = str(child_row['ITEM_CODE'])
+            
+            # Evitar duplicados de hijos
+            if child_code in added_codes:
+                continue
+                
+            added_codes.add(child_code)
+            
+            child_option_value = ET.SubElement(option_values, 'option-value', {'value-id': child_code, 'default': 'false'})
+            ET.SubElement(child_option_value, 'display-value', {'xml:lang': 'x-default'}).text = child_code
+            ET.SubElement(child_option_value, 'product-id-modifier').text = child_code
+            child_option_prices = ET.SubElement(child_option_value, 'option-value-prices')
+            ET.SubElement(child_option_prices, 'option-value-price', {'currency': 'GTQ'}).text = '0.00'
 
 def add_product_options(product, row, df_relations, df_plans, df_phones):
     """Añade opciones de producto según tipo (POSPAGO, PREPAGO, PLAN)"""
@@ -473,13 +503,15 @@ def create_parent_product(root, row, df, df_children):
     ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
     
     custom_attrs = ET.SubElement(product, 'custom-attributes')
-    for prefix in ATTR_PREFFIXES:
-        for column_name in df:
-            if column_name.startswith(prefix) and not pd.isna(row[column_name]):
-                attr_id = column_name.lower()
-                if attr_id == 'attr_texto_cuotas':
-                    attr_value = str(row[column_name])
-                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = str(row['ATTR_TEXTO_CUOTAS'])
+    
+    if 'cen_5g' in row.index and not pd.isna(row['cen_5g']):
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_5g'}).text = str(row['cen_5g'])
+    if 'cen_esim' in row.index and not pd.isna(row['cen_esim']):
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim'}).text = str(row['cen_esim'])
+    
+    if str(row['ATTR_CONF_TIPOPRODUCTO']) == 'OTRO':
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_conf_tipoproducto'}).text = 'ACCESORIOS'
 
     add_product_variations(product, df_children)
     add_store_attributes(product)
@@ -531,7 +563,7 @@ def create_child_product(root, row, df_columns):
 dataframes_base = [df_products, df_products_plan_fijo, df_products_options]
 for df in dataframes_base:
     for _, row in df.iterrows():
-        create_child_product(root, row, df_products.columns)
+        create_child_product(root, row, df.columns)
 
 
 ########## CREACIÓN DE PRODUCT OPTIONS GENERALES (SHARED) ##########
@@ -549,9 +581,9 @@ shared_options = {
         'OPTION_PRICE': [0.00, 0.00]
     },
     'mesesContratoOptions': {
-        'OPTION_CODE': ['12', '18', '24'],
-        'OPTION_NAME': ['12 meses', '18 meses', '24 meses'],
-        'OPTION_PRICE': [0.00, 0.00, 0.00]
+        'OPTION_CODE': ['24', '18'],
+        'OPTION_NAME': ['24 meses', '18 meses'],
+        'OPTION_PRICE': [0.00, 0.00]
     },
     'planConEquipoOptions': {
         'OPTION_CODE': ['PCELN', 'PCERP'],
@@ -571,5 +603,5 @@ for option_name, option_data in shared_options.items():
 
 ########## EXPORTAR XML ##########
 tree = ET.ElementTree(root)
-tree.write('master.xml', encoding='utf-8', xml_declaration=True)
+tree.write('GT-carganueva23-master.xml', encoding='utf-8', xml_declaration=True)
 print(tree)

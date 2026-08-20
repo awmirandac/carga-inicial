@@ -6,7 +6,10 @@ EXTERNAL_LOCATION_HTTP = 'http://tiendaenlinea.claro.com.gt/cdn/'
 EXTERNAL_LOCATION_HTTPS = 'https://tiendaenlinea.claro.com.gt/cdn/'
 
 ATTR_PREFFIXES = ['ATTR_CHARS_', 'ATTR_TECHSPECH_', 'ATTR_CONF_', 'ATTR_DETALLE_', 'CEN_COLOR', 'CEN_STORAGE', 'CEN_MODALITY', 'CATEGORY_CODE', 'attr_conf_modalidad', 'ATTR_TEXTO_CUOTAS']
-CEN_PREFFIXES = ['cen_']
+CEN_PREFFIXES = ['cen_', 'c_cen_esim_support']
+DESCRIPCION_PREFFIXES = ['descripcion_']
+PLAN_PREFFIXES = ['plan_']
+HOGAR_PREFFIXES = ['hogar_']
 
 PRODUCT_OPTION_PLAN = 'planesPostpagoOptions'
 
@@ -15,11 +18,12 @@ PRODUCT_OPTION_PLAN = 'planesPostpagoOptions'
 import pandas as pd
 from google.colab import drive
 drive.mount('/content/drive')
-FOLDER = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/02-03-2026/"
+FOLDER_CARGA_23_03 = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/23-03-2026/"
+FOLDER_NUEVA_CARGA = "/content/drive/MyDrive/Test_cargas_iniciales/Pruebas-DEV/18-03-2026/"
 
-df_products_master = pd.read_csv(FOLDER + "[today]Item_master_actualizado_final.csv")
-df_products_master_plan = pd.read_csv(FOLDER + "[today]item_Master_Planes.csv")
-df_products_master_relations_phone_plan = pd.read_csv(FOLDER + "[today]Relations-Phone_Plan-PRIORIDAD_PHONE.csv")
+df_products_master = pd.read_csv(FOLDER_CARGA_23_03 + "Item_Master_23_03_26.csv")
+df_products_master_plan = pd.read_csv(FOLDER_NUEVA_CARGA + "[dev]Item_Master_Planes_18_03_26.csv")
+df_products_master_relations_phone_plan = pd.read_csv(FOLDER_CARGA_23_03 + "Relations-phone-plan.csv")
 # df_products: df de pre, pos y otros
 df_products = df_products_master
 # df_products_plan_fijo: df solo de plan fijo
