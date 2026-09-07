@@ -402,7 +402,9 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
 
     # Filtrar por PAYMENT_TERM y eliminar duplicados por PLAN_CODE, default primero.
     # El orden es estable: entre los no-default se respeta el de la pestana.
-    unique_plans = related_plans[related_plans['PAYMENT_TERM'] == PAYMENT_TERM].drop_duplicates(subset=['PLAN_CODE'], keep='first')
+    # La matriz se lee como texto, asi que el plazo se compara como texto
+    unique_plans = related_plans[related_plans['PAYMENT_TERM'].astype(str).str.strip() == str(PAYMENT_TERM)]
+    unique_plans = unique_plans.drop_duplicates(subset=['PLAN_CODE'], keep='first')
     unique_plans = unique_plans.sort_values(by='DEFAULT', ascending=False, kind='stable').reset_index(drop=True)
 
     # El default lo marca la columna DEFAULT de la matriz de precios (1 = default).
@@ -671,9 +673,9 @@ shared_options = {
         'OPTION_PRICE': [0.00, 0.00]
     },
     'mesesContratoOptions': {
-        'OPTION_CODE': ['24', '18'],
-        'OPTION_NAME': ['24 meses', '18 meses'],
-        'OPTION_PRICE': [0.00, 0.00]
+        'OPTION_CODE': ['18'],
+        'OPTION_NAME': ['18 meses'],
+        'OPTION_PRICE': [0.00]
     },
     'planConEquipoOptions': {
         'OPTION_CODE': ['PCELN', 'PCERP'],

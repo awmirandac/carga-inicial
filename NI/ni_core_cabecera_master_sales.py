@@ -69,7 +69,12 @@ print("Pestanas encontradas:", list(pestanas))
 
 
 def leer_hoja(hoja):
-    """Devuelve la pestana como dataframe, con el mismo parseo que tenia el CSV exportado."""
+    """Devuelve la pestana como dataframe, con los valores tal cual figuran en el Sheet.
+
+    Se lee todo como texto a proposito: si pandas infiere los tipos, una columna
+    de enteros con alguna celda vacia pasa a float64 y 24 termina saliendo como
+    24.0 en el XML.
+    """
     nombre, posicion = hoja
     if nombre in pestanas:
         ws = pestanas[nombre]
@@ -83,7 +88,7 @@ def leer_hoja(hoja):
     buffer = io.StringIO()
     csv.writer(buffer).writerows(ws.get_all_values())
     buffer.seek(0)
-    return pd.read_csv(buffer)
+    return pd.read_csv(buffer, dtype=str)
 
 
 df_products_master = leer_hoja(HOJA_EQUIPOS)
