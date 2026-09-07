@@ -1,6 +1,6 @@
 # %% Constantes
-MASTER_CATALOG_NAME = 'NI-test-claro-master'
-SALES_CATALOG_NAME = 'NI-test-claro-sales'
+MASTER_CATALOG_NAME = 'NI_master_catalog'
+SALES_CATALOG_NAME = 'NI_catalog_storefront'
 
 EXTERNAL_LOCATION_HTTP = 'http://tiendaenlinea.claro.com.ni/cdn/'
 EXTERNAL_LOCATION_HTTPS = 'https://tiendaenlinea.claro.com.ni/cdn/'
@@ -10,8 +10,16 @@ CURRENCY = 'NIO'
 # Plazo de financiamiento vigente en Nicaragua
 PAYMENT_TERM = 18
 
-ATTR_PREFFIXES = ['ATTR_CHARS_', 'ATTR_TECHSPECH_', 'ATTR_CONF_', 'ATTR_DETALLE_', 'CEN_COLOR', 'CEN_STORAGE', 'CEN_MODALITY', 'CATEGORY_CODE', 'attr_conf_modalidad', 'ATTR_TEXTO_CUOTAS']
-CEN_PREFFIXES = ['cen_', 'c_cen_esim_support']
+# Precio fijo temporal para las opciones de plan (prueba).
+# Poner en None para volver a tomar el OFFER_PRICE de la matriz.
+PRECIO_FIJO_OPCION = '666.00'
+
+ATTR_PREFFIXES = ['ATTR_CHARS_', 'ATTR_TECHSPECH_', 'ATTR_CONF_', 'ATTR_DETALLE_', 'CEN_COLOR', 'CEN_STORAGE', 'CEN_MODALITY', 'CATEGORY_CODE', 'attr_conf_modalidad', 'ATTR_TEXTO_CUOTAS', 
+                'attr_linea_fija_beneficio',
+                'attr_promocion_corta_desc',
+                'attr_internet_beneficio',
+                'attr_canales_beneficio']
+CEN_PREFFIXES = ['cen_', 'c_cen_esim_support', 'pageTitle']
 DESCRIPCION_PREFFIXES = ['descripcion_']
 PLAN_PREFFIXES = ['plan_']
 HOGAR_PREFFIXES = ['hogar_']
@@ -28,15 +36,15 @@ import gspread
 import pandas as pd
 
 # Fuente unica: el Google Sheet "Matrices(AVATAR)" y sus 4 pestanas
-SHEET_ID = "1a-CEDonuVejvxHig8QCn-1hGXN2GJGdYJGHhr0R-Mi4"
+SHEET_ID = "1SC7Bow84uBoihREsUxRIWAzTPvhBvIwjOTPZ-uWJ6bE" ## "1a-CEDonuVejvxHig8QCn-1hGXN2GJGdYJGHhr0R-Mi4"
 
 # Credenciales de la cuenta de servicio (solo se usan fuera de Colab)
 RUTA_CREDENCIALES = os.path.expanduser("~/.config/gspread/service_account.json")
 
 # (nombre de la pestana, posicion de respaldo si el nombre llegara a cambiar)
-HOJA_EQUIPOS    = ('PRE-POS-ACC', 0)        # prepago, pospago y accesorios
-HOJA_PLANES     = ('PLANES-POSTPAGO', 1)    # planes y plan fijo
-HOJA_RELACIONES = ('RELATIONS', 2)          # relacion telefono-plan
+HOJA_EQUIPOS    = ('BASE EQUIPOS_ACC_EQUIPOS HOGAR', 0)        # prepago, pospago y accesorios
+HOJA_PLANES     = ('PLANES POSTPAGO', 1)    # planes y plan fijo
+HOJA_RELACIONES = ('price_master_claroni', 2)          # relacion telefono-plan
 HOJA_CATEGORIAS = ('CATEGORY_SALES', 3)     # arbol de categorias del catalogo de ventas
 
 

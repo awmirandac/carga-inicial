@@ -2,6 +2,21 @@ import xml.etree.ElementTree as ET
 
 # %% FUNCIONES AUXILIARES
 
+VALORES_VACIOS = {'', 'vacio', 'nan'}
+
+def es_vacio(valor):
+    """True si el valor no tiene contenido: NaN, string vacio o el literal 'vacio'."""
+    if valor is None or pd.isna(valor):
+        return True
+    return str(valor).strip().lower() in VALORES_VACIOS
+
+def texto_atributo(valor):
+    """Texto a escribir dentro de un tag: cadena vacia si el valor no tiene contenido.
+
+    ElementTree serializa un tag sin contenido como autocerrado: <brand />.
+    """
+    return '' if es_vacio(valor) else str(valor)
+
 def create_catalog_header(root):
     """Crea la cabecera del catálogo XML con configuración de imágenes"""
     header = ET.SubElement(root, 'header')
@@ -33,15 +48,18 @@ def add_basic_product_info(product, min_qty='1', step_qty='1'):
     ET.SubElement(product, 'step-quantity').text = step_qty
 
 def add_descriptions(product, row):
-    """Agrega short/long description. Si la columna no existe en la fila, omite el elemento."""
-    columnas = ('ATTR_CHARS_EXT_A_DESC', 'ATTR_CHARS_EXT_B_DESC', 'ATTR_CHARS_EXT_C_DESC')
+    """Agrega short/long description con el valor de la columna DESCRIPTION.
 
-    if columnas[0] in row.index:
-        ET.SubElement(product, 'short-description', {'xml:lang': 'x-default'}).text = str(row[columnas[0]])
+    Si la columna no existe en la fila, omite ambos elementos. Si existe pero
+    viene sin valor, emite los dos tags sin contenido.
+    """
+    if 'DESCRIPTION' not in row.index:
+        return
 
-    presentes = [str(row[c]) for c in columnas if c in row.index]
-    if presentes:
-        ET.SubElement(product, 'long-description', {'xml:lang': 'x-default'}).text = ' '.join(presentes)
+    descripcion = texto_atributo(row['DESCRIPTION']).strip()
+
+    ET.SubElement(product, 'short-description', {'xml:lang': 'x-default'}).text = descripcion
+    ET.SubElement(product, 'long-description', {'xml:lang': 'x-default'}).text = descripcion
 
 
 def add_product_flags(product, online=True, available=True, searchable=True):
@@ -95,16 +113,22 @@ def create_variation_attribute(attributes, attr_id, display_name, values):
     ET.SubElement(variation_attr, 'display-name', {'xml:lang': 'x-default'}).text = display_name
     variation_values = ET.SubElement(variation_attr, 'variation-attribute-values')
 
+    emitidos = set()
     for value in values:
         # Formatear valores específicos
-        formatted_value = value
+        formatted_value = texto_atributo(value)
         if attr_id == 'cen_modality':
-            if value == 'PREPAGO':
+            if formatted_value == 'PREPAGO':
                 formatted_value = 'Prepago'
-            elif value == 'POSPAGO':
+            elif formatted_value == 'POSPAGO':
                 formatted_value = 'Postpago'
-            elif value == 'OTRO':
+            elif formatted_value == 'OTRO':
                 formatted_value = 'Accesorios'
+
+        # Valores distintos sin contenido colapsan todos en value=""
+        if formatted_value in emitidos:
+            continue
+        emitidos.add(formatted_value)
 
         variation_value = ET.SubElement(variation_values, 'variation-attribute-value', {'value': formatted_value})
         ET.SubElement(variation_value, 'display-value', {'xml:lang': 'x-default'}).text = formatted_value
@@ -245,10 +269,16 @@ def add_custom_attributes(product, row, df_columns):
 
     for prefix in ATTR_PREFFIXES:
         for column_name in df_columns:
-            if column_name.startswith(prefix) and not pd.isna(row[column_name]):
+            if column_name.startswith(prefix) and column_name in row.index:
                 attr_id = column_name.lower()
                 if attr_id in skip_attrs:
                     continue
+
+                # Sin valor: solo la etiqueta, sin contenido
+                if es_vacio(row[column_name]):
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id})
+                    continue
+
                 attr_value = str(row[column_name])
 
                 # Formatear modalidad
@@ -283,50 +313,77 @@ def add_custom_attributes(product, row, df_columns):
 
     for prefix in CEN_PREFFIXES:
         for column_name in df_columns:
-            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]): # Added column_name in row.index check
+            if column_name.startswith(prefix) and column_name in row.index: # Added column_name in row.index check
                 attr_id = column_name
+
+                # Color, almacenamiento y modalidad se emiten desde el bucle de ATTR
+                if attr_id in ['cen_color', 'cen_storage', 'cen_modality']:
+                    continue
+
+                # Sin valor: solo la etiqueta, sin contenido
+                if es_vacio(row[column_name]):
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id})
+                    continue
+
                 attr_value = str(row[column_name])
 
-                # Formatear campos cen, excepto color, almacenamiento y modalidad
-                if attr_id not in ['cen_color', 'cen_storage', 'cen_modality']:
-                    if attr_id == 'cen_otherBenDataExtended':
-                        convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
-                    elif attr_id == 'cen_outstanding_features':
-                        convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
-                    elif attr_id == 'cen_snsData':
-                        convert_sns_data(custom_attrs, attr_value)
-                    elif attr_id == 'cen_sim_analogic_support':
-                        convert_boolean_analog_support(custom_attrs, attr_value)
-                    elif attr_id == 'c_cen_esim_support':
-                        convert_boolean_esim_support(custom_attrs, attr_value)
-                    else:
-                        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
+                # Formatear campos cen
+                if attr_id == 'cen_otherBenDataExtended':
+                    convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
+                elif attr_id == 'cen_outstanding_features':
+                    convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
+                elif attr_id == 'cen_snsData':
+                    convert_sns_data(custom_attrs, attr_value)
+                elif attr_id == 'cen_sim_analogic_support':
+                    convert_boolean_analog_support(custom_attrs, attr_value)
+                elif attr_id == 'c_cen_esim_support':
+                    convert_boolean_esim_support(custom_attrs, attr_value)
+                else:
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
 
     for prefix in DESCRIPCION_PREFFIXES:
         for column_name in df_columns:
-            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+            if column_name.startswith(prefix) and column_name in row.index:
                 attr_id = column_name.lower()
+
+                # Sin valor: solo la etiqueta, sin contenido
+                if es_vacio(row[column_name]):
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id})
+                    continue
+
                 attr_value = str(row[column_name])
                 ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
-                
+
     for prefix in PLAN_PREFFIXES:
         for column_name in df_columns:
-            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+            if column_name.startswith(prefix) and column_name in row.index:
                 attr_id = column_name.lower()
+
+                # Sin valor: solo la etiqueta, sin contenido
+                if es_vacio(row[column_name]):
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id})
+                    continue
+
                 attr_value = str(row[column_name])
                 if attr_id == 'plan_includes':
                     convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
                 else:
                     ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
-                
+
     for prefix in HOGAR_PREFFIXES:
         for column_name in df_columns:
-            if column_name.startswith(prefix) and column_name in row.index and not pd.isna(row[column_name]):
+            if column_name.startswith(prefix) and column_name in row.index:
                 attr_id = column_name.lower()
+
+                # Sin valor: solo la etiqueta, sin contenido
+                if es_vacio(row[column_name]):
+                    ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id})
+                    continue
+
                 attr_value = str(row[column_name])
                 if attr_id == 'hogar_servicios_adicionales':
                     convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
-                else: 
+                else:
                     ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
 
     create_datasheet(custom_attrs)
@@ -343,9 +400,18 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
     ET.SubElement(product_option, 'sort-mode').text = 'price'
     option_values = ET.SubElement(product_option, 'option-values')
 
-    # Filtrar por PAYMENT_TERM y eliminar duplicados por PLAN_CODE, default primero
+    # Filtrar por PAYMENT_TERM y eliminar duplicados por PLAN_CODE, default primero.
+    # El orden es estable: entre los no-default se respeta el de la pestana.
     unique_plans = related_plans[related_plans['PAYMENT_TERM'] == PAYMENT_TERM].drop_duplicates(subset=['PLAN_CODE'], keep='first')
-    unique_plans = unique_plans.sort_values(by='DEFAULT', ascending=False).reset_index(drop=True)
+    unique_plans = unique_plans.sort_values(by='DEFAULT', ascending=False, kind='stable').reset_index(drop=True)
+
+    # El default lo marca la columna DEFAULT de la matriz de precios (1 = default).
+    # Solo cuentan los planes que se van a emitir; si ninguno viene marcado, cae al primero.
+    emitibles = [c for c in unique_plans['PLAN_CODE'].astype(str) if c in df_plans['ITEM_CODE'].values]
+    marcados = [str(fila['PLAN_CODE']) for _, fila in unique_plans.iterrows()
+                if pd.notna(fila.get('DEFAULT')) and str(fila['DEFAULT']).strip() in ('1', '1.0')
+                and str(fila['PLAN_CODE']) in emitibles]
+    plan_default = marcados[0] if marcados else (emitibles[0] if emitibles else None)
 
     # Iterar sobre planes relacionados
     for idx_plan, plan_row in unique_plans.iterrows():
@@ -355,14 +421,18 @@ def create_plan_options_for_phone(options, item_code, df_relations, df_plans):
         if plan_code not in df_plans['ITEM_CODE'].values:
             continue
 
-        offer_price = str(plan_row['OFFER_PRICE'])
+        if PRECIO_FIJO_OPCION is not None:
+            offer_price = PRECIO_FIJO_OPCION
+        else:
+            # La matriz usa coma decimal; el XML necesita punto
+            offer_price = str(plan_row['OFFER_PRICE']).replace(',', '.')
 
         # Obtener nombre del plan
         plan_info = df_plans[df_plans['ITEM_CODE'] == plan_code]
         plan_name = plan_info['NAME'].values[0] if not plan_info.empty else plan_code
 
-        # Determinar si es default según columna DEFAULT
-        is_default = 'true' if plan_row['DEFAULT'] == 1 else 'false'
+        # Default segun la columna DEFAULT de la matriz de precios
+        is_default = 'true' if plan_code == plan_default else 'false'
 
         option_value = ET.SubElement(option_values, 'option-value', {'value-id': plan_code, 'default': is_default})
         ET.SubElement(option_value, 'display-value', {'xml:lang': 'x-default'}).text = plan_name
@@ -520,16 +590,16 @@ def create_parent_product(root, row, df, df_children):
     add_product_images(product, row['ITEM_CODE'])
 
     if 'FILT_MARCA' in row.index:
-        ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
-    
+        ET.SubElement(product, 'brand').text = texto_atributo(row['FILT_MARCA'])
+
     custom_attrs = ET.SubElement(product, 'custom-attributes')
     if 'ATTR_TEXTO_CUOTAS' in row.index:
-        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = str(row['ATTR_TEXTO_CUOTAS'])
-    
-    if 'cen_5g' in row.index and not pd.isna(row['cen_5g']):
-        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_5g'}).text = str(row['cen_5g'])
-    if 'cen_esim' in row.index and not pd.isna(row['cen_esim']):
-        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim'}).text = str(row['cen_esim'])
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_texto_cuotas'}).text = texto_atributo(row['ATTR_TEXTO_CUOTAS'])
+
+    if 'cen_5g' in row.index:
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_5g'}).text = texto_atributo(row['cen_5g'])
+    if 'cen_esim' in row.index:
+        ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim'}).text = texto_atributo(row['cen_esim'])
     
     if str(row['ATTR_CONF_TIPOPRODUCTO']) == 'OTRO':
         ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'attr_conf_tipoproducto'}).text = 'ACCESORIOS'
@@ -568,7 +638,7 @@ def create_child_product(root, row, df_columns):
         add_product_images(product, row['ITEM_CODE'])
 
     if 'FILT_MARCA' in row.index:
-        ET.SubElement(product, 'brand').text = str(row['FILT_MARCA'])
+        ET.SubElement(product, 'brand').text = texto_atributo(row['FILT_MARCA'])
 
     # Custom attributes
     add_custom_attributes(product, row, df_columns)
