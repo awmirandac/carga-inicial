@@ -255,7 +255,278 @@ def create_datasheet(custom_attrs):
     Genera un custom-attribute con estilos CSS y estructura HTML para mostrar
     especificaciones técnicas del producto en formato de tarjetas
     """
-    datasheet_html = '''<style type="text/css">.data-sheet-container { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, 436px); -webkit-box-pack: center; -ms-flex-pack: center; -webkit-justify-content: center; justify-content: center; } .data-sheet-element { width: 436px; margin-top: 22px; } .data-sheet-card-header { display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; gap: 8px; width: 100%; height: 56px; border-radius: 12px 12px 0px 0px; background-color: #F4F4F4; -webkit-box-pack: center; -ms-flex-pack: center; -webkit-justify-content: center; justify-content: center; -webkit-align-items: center; -webkit-box-align: center; -ms-flex-align: center; align-items: center; font-size: 16px; color: #3C3C3C; font-family: Roboto Medium; } .data-sheet-card-body { padding: 12px; } .data-sheet-card-body-row { display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; border-bottom: 1px solid #F4F4F4; margin-bottom: 0.5rem; padding-bottom: 0.5rem; } .data-sheet-card-body-title { width: 50%; font-size: 14px; line-height: 21px; font-weight: 400; color: #6C6C6C; } .data-sheet-card-body-description { width: 50%; font-size: 14px; line-height: 21px; font-weight: 400; color: #3C3C3C; } .data-sheet-card-body-subtitle-container { display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; border-bottom: 1px solid #F4F4F4; margin-bottom: 0.5rem; padding-bottom: 0.5rem; -webkit-box-pack: center; -ms-flex-pack: center; -webkit-justify-content: center; justify-content: center; } .data-sheet-card-body-subtitle-text { font-size: 16px; line-height: 21px; font-weight: 500; color: #3C3C3C; } @media (max-width: 1024px) { .data-sheet-container { grid-template-columns: repeat(auto-fill, 345px); } .data-sheet-element { width: 345px; } } </style> <div class="data-sheet-container"> <div class="css-0"> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="" src="Procesador.svg?$staticlink$" title="" /> <p>Procesador</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Modelo</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_general_procesador}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Sistema operativo</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_general_sistema_operativo}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Tipo de SIM</p> <p class="data-sheet-card-body-description">{{c_cen_esim_support}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Testeo</p> <p class="data-sheet-card-body-description">{{testoooo}}</p> </div> </div> </div> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="Imagen de bluetooth" src="Conectividad.svg?$staticlink$" title="" /> <p>Conectividad</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Bluetooh</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_bluetooth}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Estéreo Bluetooh</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_bluetooth_st}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Wi-fi</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_wifi}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">GPS</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_gps}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Bandas</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_banda}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Tarjeta SIM</p> <p class="data-sheet-card-body-description">{{c_cen_esim_support}}</p> </div> </div> </div> </div> <div class="css-0"> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="" src="Chip.svg?$staticlink$" title="" /> <p>Memoria</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Almacenamiento</p> <p class="data-sheet-card-body-description">{{c_cen_storage}}</p> </div> </div> </div> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="" src="Camara.svg?$staticlink$" title="" /> <p>Cámara</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Cámara frontal</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_camara_frontal}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Flash</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_flash}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Enfoque</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_enfoque}}</p> </div> <div class="data-sheet-card-body-subtitle-container"> <p class="data-sheet-card-body-subtitle-text">Frontal</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Resolución</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_camara_frontal}}</p> </div> <div class="data-sheet-card-body-subtitle-container"> <p class="data-sheet-card-body-subtitle-text">Trasera estándar</p> </div> </div> </div> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="Imagen de Caracteristicas" src="Caracteristicas.svg?$staticlink$" title="" /> <p>Características</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Video</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_video}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Videollamada</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_general_videollamada}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Color</p> <p class="data-sheet-card-body-description">{{c_cen_color}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Flash</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_flash}}</p> </div> </div> </div> </div> <div class="css-0"> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="Imagen de audio" src="Audio.svg?$staticlink$" title="" /> <p>Audio</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Música</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_musica}}</p> </div> </div> </div> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="Imagen de estrella" src="Diseño.svg?$staticlink$" title="" /> <p>Diseño</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Tamaño</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_resumen_tamano}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Peso</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_resumen_peso}}</p> </div> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Dimensiones del teléfono</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_general_dimensiones}}</p> </div> </div> </div> <div class="data-sheet-card"> <div class="data-sheet-card-header"><img alt="Imagen de batería" src="Bateria.svg?$staticlink$" title="" /> <p>Batería</p> </div> <div class="data-sheet-card-body"> <div class="data-sheet-card-body-row"> <p class="data-sheet-card-body-title">Capacidad de la batería</p> <p class="data-sheet-card-body-description">{{c_attr_techspech_general_bateria_capacidad}}</p> </div> </div> </div> </div> </div>'''
+    datasheet_html = '''<style type="text/css">
+    .data-sheet-container {
+        display: grid;
+        gap: 22px;
+        grid-template-columns: repeat(auto-fill, 436px);
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+    }
+
+    .data-sheet-element {
+        width: 436px;
+        margin-top: 22px;
+    }
+
+    .data-sheet-card-header {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        height: 56px;
+        border-radius: 12px 12px 0px 0px;
+        background-color: #F4F4F4;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        font-size: 16px;
+        color: #3C3C3C;
+        font-family: Roboto Medium;
+    }
+
+    .data-sheet-card-body {
+        padding: 12px;
+    }
+
+    .data-sheet-card-body-row {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        border-bottom: 1px solid #F4F4F4;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .data-sheet-card-body-title {
+        width: 50%;
+        font-size: 14px;
+        line-height: 21px;
+        font-weight: 400;
+        color: #6C6C6C;
+    }
+
+    .data-sheet-card-body-description {
+        width: 50%;
+        font-size: 14px;
+        line-height: 21px;
+        font-weight: 400;
+        color: #3C3C3C;
+    }
+
+    .data-sheet-card-body-subtitle-container {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        border-bottom: 1px solid #F4F4F4;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+    }
+
+    .data-sheet-card-body-subtitle-text {
+        font-size: 16px;
+        line-height: 21px;
+        font-weight: 500;
+        color: #3C3C3C;
+    }
+
+    @media (max-width: 1024px) {
+        .data-sheet-container {
+            grid-template-columns: repeat(auto-fill, 345px);
+        }
+
+        .data-sheet-element {
+            width: 345px;
+        }
+    }
+</style>
+<div class="data-sheet-container">
+    <div class="css-0">
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="" src="Procesador.svg?$staticlink$" title="" />
+                <p>Procesador</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Modelo</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_general_procesador}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Sistema operativo</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_general_sistema_operativo}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Tipo de SIM</p>
+                    <p class="data-sheet-card-body-description">{{c_cen_esim_support}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Testeo</p>
+                    <p class="data-sheet-card-body-description">{{testoooo}}</p>
+                </div>
+            </div>
+        </div>
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="Imagen de bluetooth" src="Conectividad.svg?$staticlink$"
+                    title="" />
+                <p>Conectividad</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Bluetooh</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_bluetooth}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Estéreo Bluetooh</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_bluetooth_st}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Wi-fi</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_wifi}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">GPS</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_gps}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Bandas</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_conectividad_banda}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Tarjeta SIM</p>
+                    <p class="data-sheet-card-body-description">{{c_cen_esim_support}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="css-0">
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="" src="Chip.svg?$staticlink$" title="" />
+                <p>Memoria</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Almacenamiento</p>
+                    <p class="data-sheet-card-body-description">{{c_cen_storage}}</p>
+                </div>
+            </div>
+        </div>
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="" src="Camara.svg?$staticlink$" title="" />
+                <p>Cámara</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Cámara frontal</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_camara_frontal}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Flash</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_flash}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Enfoque</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_enfoque}}</p>
+                </div>
+                <div class="data-sheet-card-body-subtitle-container">
+                    <p class="data-sheet-card-body-subtitle-text">Frontal</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Resolución</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_camara_frontal}}</p>
+                </div>
+                <div class="data-sheet-card-body-subtitle-container">
+                    <p class="data-sheet-card-body-subtitle-text">Trasera estándar</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Resolución</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_camara_trasera}}</p>
+                </div>
+            </div>
+        </div>
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="Imagen de Caracteristicas"
+                    src="Caracteristicas.svg?$staticlink$" title="" />
+                <p>Características</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Video</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_video}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Videollamada</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_general_videollamada}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Color</p>
+                    <p class="data-sheet-card-body-description">{{c_cen_color}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Flash</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_flash}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="css-0">
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="Imagen de audio" src="Audio.svg?$staticlink$" title="" />
+                <p>Audio</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Música</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_entretenimiento_musica}}</p>
+                </div>
+            </div>
+        </div>
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="Imagen de estrella" src="Diseño.svg?$staticlink$" title="" />
+                <p>Diseño</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Tamaño</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_resumen_tamano}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Peso</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_resumen_peso}}</p>
+                </div>
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Dimensiones del teléfono</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_general_dimensiones}}</p>
+                </div>
+            </div>
+        </div>
+        <div class="data-sheet-card">
+            <div class="data-sheet-card-header"><img alt="Imagen de batería" src="Bateria.svg?$staticlink$" title="" />
+                <p>Batería</p>
+            </div>
+            <div class="data-sheet-card-body">
+                <div class="data-sheet-card-body-row">
+                    <p class="data-sheet-card-body-title">Capacidad de la batería</p>
+                    <p class="data-sheet-card-body-description">{{c_attr_techspech_general_bateria_capacidad}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>'''
 
     custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cenDataSheet'})
     custom_attr.text = datasheet_html
