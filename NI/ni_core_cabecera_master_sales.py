@@ -36,7 +36,7 @@ import gspread
 import pandas as pd
 
 # Fuente unica: el Google Sheet "Matrices(AVATAR)" y sus 4 pestanas
-SHEET_ID = "1SC7Bow84uBoihREsUxRIWAzTPvhBvIwjOTPZ-uWJ6bE" ## "1a-CEDonuVejvxHig8QCn-1hGXN2GJGdYJGHhr0R-Mi4"
+SHEET_ID = "12be1yU1FX8Jdz3aXszzuj3suN71WDWyKkzL77Dm1OOs" ## "1a-CEDonuVejvxHig8QCn-1hGXN2GJGdYJGHhr0R-Mi4"
 
 # Credenciales de la cuenta de servicio (solo se usan fuera de Colab)
 RUTA_CREDENCIALES = os.path.expanduser("~/.config/gspread/service_account.json")

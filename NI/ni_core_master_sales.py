@@ -184,69 +184,17 @@ def add_product_variations(product, df_prod_attr):
             'default': is_default
         })
 
-def convert_sns_data(custom_attrs, attr_value):
-    """Formatea y crea custom-attribute para cen_snsData
+def convert_boolean_support(custom_attrs, attribute_id, attr_value):
+    """Crea custom-attribute booleano a partir de Yes/No.
 
-    Transforma valores separados por comas en formato lowercase y unificado
-    Ejemplo:
-        Input: "Tiktok, WhatsApp, Facebook, Instagram, X"
-        Output: <custom-attribute attribute-id="cen_snsData">whatsapp,facebook,instagram,tiktok,x</custom-attribute>
-    """
-    # Mapeo de variaciones de valores a su forma estándar
-    sns_mapping = {
-        'tiktok': 'tiktok',
-        'whatsapp': 'whatsapp',
-        'facebook': 'facebook',
-        'instagram': 'instagram',
-        'x': 'x',
-        'waze': 'waze',
-        'messenger': 'messenger',
-        'uber': 'uber'
-    }
-
-    # Dividir por comas y normalizar cada valor
-    raw_values = [v.strip().lower() for v in attr_value.split(',') if v.strip()]
-
-    # Mapear valores a su forma estándar y eliminar duplicados
-    sns_values = []
-    for value in raw_values:
-        # Buscar en el mapping (por si hay variaciones)
-        if value in sns_mapping:
-            sns_values.append(sns_mapping[value])
-
-    # Eliminar duplicados manteniendo orden
-    seen = set()
-    unique_values = []
-    for val in sns_values:
-        if val not in seen:
-            seen.add(val)
-            unique_values.append(val)
-
-    # Crear el custom-attribute con valores separados por coma
-    sns_text = ','.join(unique_values)
-    custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_snsData'})
-    custom_attr.text = sns_text
-
-def convert_boolean_analog_support(custom_attrs, attr_value):
-    """Convierte valores booleanos para cen_sim_analogic_support
-
-    Transforma "Yes" a "true" y "No" a "false"
+    "Yes"/"yes" -> "true". "No"/"no" o cualquier otro valor -> "false".
+    (El vacio no llega aqui: el bucle emite la etiqueta sin contenido.)
     Ejemplo:
         Input: "Yes"
         Output: <custom-attribute attribute-id="cen_sim_analogic_support">true</custom-attribute>
     """
-    # Convertir valores a booleano
-    bool_value = 'true' if str(attr_value).lower() == 'yes' else 'false'
-    custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_sim_analogic_support'})
-    custom_attr.text = bool_value
-
-def convert_boolean_esim_support(custom_attrs, attr_value):
-    """Convierte valores booleanos para cen_esim_support.
-
-    Transforma "Yes" a "true" y "No" a "false".
-    """
-    bool_value = 'true'
-    custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': 'cen_esim_support'})
+    bool_value = 'true' if str(attr_value).strip().lower() == 'yes' else 'false'
+    custom_attr = ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attribute_id})
     custom_attr.text = bool_value
 
 def create_datasheet(custom_attrs):
@@ -587,6 +535,10 @@ def add_custom_attributes(product, row, df_columns):
             if column_name.startswith(prefix) and column_name in row.index: # Added column_name in row.index check
                 attr_id = column_name
 
+                # La columna del sheet es c_cen_esim_support; el campo en BM es cen_esim_support
+                if attr_id == 'c_cen_esim_support':
+                    attr_id = 'cen_esim_support'
+
                 # Color, almacenamiento y modalidad se emiten desde el bucle de ATTR
                 if attr_id in ['cen_color', 'cen_storage', 'cen_modality']:
                     continue
@@ -603,12 +555,8 @@ def add_custom_attributes(product, row, df_columns):
                     convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
                 elif attr_id == 'cen_outstanding_features':
                     convert_values_custom_attribute(custom_attrs, attr_value, attr_id)
-                elif attr_id == 'cen_snsData':
-                    convert_sns_data(custom_attrs, attr_value)
-                elif attr_id == 'cen_sim_analogic_support':
-                    convert_boolean_analog_support(custom_attrs, attr_value)
-                elif attr_id == 'c_cen_esim_support':
-                    convert_boolean_esim_support(custom_attrs, attr_value)
+                elif attr_id in ('cen_sim_analogic_support', 'cen_esim_support'):
+                    convert_boolean_support(custom_attrs, attr_id, attr_value)
                 else:
                     ET.SubElement(custom_attrs, 'custom-attribute', {'attribute-id': attr_id}).text = attr_value
 
